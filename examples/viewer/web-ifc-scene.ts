@@ -9,7 +9,7 @@ let controls;
 function Init3DView() {
     scene =  new THREE.Scene();
     renderer =  new THREE.WebGLRenderer({ antialias: true });
-    let obj = document.getElementById("3dcontainer") as any;
+    let obj = document.getElementById("threecontainer") as any;
     obj.appendChild(renderer.domElement);
     camera =  new THREE.PerspectiveCamera(45,obj.clientWidth / obj.clientHeight,0.1,1000);;
   renderer.setSize( obj.clientWidth - 20, obj.clientHeight - 20);
@@ -47,7 +47,7 @@ export function InitBasicScene()
 
 
 function onWindowResize(){
-    let obj = document.getElementById("3dcontainer") as any;
+    let obj = document.getElementById("threecontainer") as any;
     camera.aspect = renderer.domElement.innerWidth / renderer.domElement.innerWidth;
     camera.updateProjectionMatrix();
 
