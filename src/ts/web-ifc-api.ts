@@ -24,6 +24,13 @@ import {
 
 let WebIFCWasm: any;
 
+// Browser-specific WASM loading
+declare global {
+    interface Window {
+        WebIFCWasm: any;
+    }
+}
+
 export * from "./ifc-schema";
 import { Properties } from "./helpers/properties";
 export { Properties };
@@ -172,13 +179,13 @@ export class IfcAPI {
      */
     async Init(customLocateFileHandler?: LocateFileHandlerFn, forceSingleThread: boolean = false) {
         if (!WebIFCWasm) {
-            if (typeof self !== 'undefined' && self.crossOriginIsolated && !forceSingleThread) {
-                try {
-                    WebIFCWasm = require("./web-ifc-mt");
-                } catch (ex){
-                    WebIFCWasm = require("./web-ifc");
-                }
-            } else WebIFCWasm = require("./web-ifc");
+            if (typeof window !== 'undefined') {
+                // In browser environment, use global WASM module
+                WebIFCWasm = window.WebIFCWasm;
+            } else {
+                Log.error('WebIFCWasm not found in window object');
+                throw new Error('WebIFCWasm not found');
+            }
         }
         
         if (WebIFCWasm && this.wasmModule == undefined) {
