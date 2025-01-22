@@ -12,7 +12,7 @@
         <div id="3dcontainer"></div>
         <div class="controls">
             <input type="button" id="runcode" value="Run Code"/>
-            <input type="file" id="finput">
+            <input type="file" id="finput"/>
             <input type="button" id="cmem" value="Clear Memory"/>
             <input type="button" id="rcode" value="Reset Editor"/>
             <label for="logLevel">Log Level:</label>
@@ -45,10 +45,23 @@
                 theme: 'vs-dark',
                 minimap: { enabled: false },
                 scrollBeyondLastLine: false,
-                fontSize: 14,
+                fontSize: 13,
+                fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+                lineHeight: 20,
                 lineNumbers: 'on',
                 renderLineHighlight: 'all',
-                automaticLayout: true
+                automaticLayout: true,
+                scrollbar: {
+                    vertical: 'visible',
+                    horizontal: 'visible',
+                    useShadows: true,
+                    verticalHasArrows: false,
+                    horizontalHasArrows: false,
+                    verticalScrollbarSize: 10,
+                    horizontalScrollbarSize: 10
+                },
+                renderWhitespace: 'none',
+                wordWrap: 'off'
             });
             window.InitMonaco(monaco);
             window.InitWebIfcViewer(editor);
