@@ -4,11 +4,13 @@
   "description": "3D IFC viewer application",
   "private": true,
   "scripts": {
-    "build-viewer": "cd examples/viewer/ && make-dir dist && node makesrc.js && esbuild --bundle web-ifc-viewer.ts --outfile=./dist/web-ifc-viewer.js && rimraf ts_src.js && cpy index.html dist && cpy ../../dist/web-ifc.wasm dist/web-ifc.wasm && cpy ../../dist/web-ifc-mt.worker.js dist/web-ifc-mt.worker.js && cpy ../../dist/web-ifc-mt.wasm dist/web-ifc-mt.wasm",
+    "build-ts": "tsc --declaration --emitDeclarationOnly",
+    "build-viewer": "npm run build-ts && cd examples/viewer/ && make-dir dist && node makesrc.js && esbuild --bundle web-ifc-viewer.ts --outfile=./dist/web-ifc-viewer.js && rimraf ts_src.js && cpy index.html dist && cpy ../../dist/web-ifc.wasm dist/web-ifc.wasm && cpy ../../dist/web-ifc-mt.worker.js dist/web-ifc-mt.worker.js && cpy ../../dist/web-ifc-mt.wasm dist/web-ifc-mt.wasm",
     "dev": "npm run build-viewer && cd examples/viewer/dist && ws -p 8080 --cors.opener-policy same-origin --cors.embedder-policy require-cor"
   },
   "author": "",
   "devDependencies": {
+    "@types/node": "^22.10.7",
     "@types/three": "^0.170.0",
     "cpy-cli": "^5.0.0",
     "esbuild": "^0.24.0",
