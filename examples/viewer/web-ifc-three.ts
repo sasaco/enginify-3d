@@ -3,8 +3,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
  
 import * as THREE from "three";
-import { IfcAPI, ms, PlacedGeometry, Color, FlatMesh, IFCSITE } from "../../dist/web-ifc-api";
-import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
+import { IfcAPI, ms, PlacedGeometry, Color, FlatMesh, IFCSITE } from "../../src/ts/web-ifc-api";
+import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
   
 export class IfcThree
 {
@@ -37,8 +37,8 @@ export class IfcThree
         }
         */
 
-        let geometries = [];
-        let transparentGeometries = [];
+        let geometries: THREE.BufferGeometry[] = [];
+        let transparentGeometries: THREE.BufferGeometry[] = [];
 
         this.ifcAPI.StreamAllMeshes(modelID, (mesh: FlatMesh) => {
             // only during the lifetime of this function call, the geometry is available in memory
@@ -51,11 +51,11 @@ export class IfcThree
                 let geom = mesh.geometry.applyMatrix4(mesh.matrix);
                 if (placedGeometry.color.w !== 1)
                 {
-                    transparentGeometries.push(geom);
+                    transparentGeometries.push(geom as any);
                 }
                 else
                 {
-                    geometries.push(geom);
+                    geometries.push(geom as any);
                 }
             }
 

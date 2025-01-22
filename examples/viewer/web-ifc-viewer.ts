@@ -1,9 +1,9 @@
-import { IfcApplication } from './../../src/ifc-schema';
-import { IfcAPI, LogLevel,ms, Schemas, IFCUNITASSIGNMENT, IFCAXIS2PLACEMENT3D,IFCLENGTHMEASURE,IFCCARTESIANPOINT,IFCAXIS2PLACEMENT2D,IFCCIRCLEPROFILEDEF,IFCDIRECTION,IFCREAL,IFCPOSITIVELENGTHMEASURE,IFCCOLUMN,IFCEXTRUDEDAREASOLID,IFCGLOBALLYUNIQUEID,IFCLABEL,IFCIDENTIFIER } from '../../dist/web-ifc-api';
+import { IFCAPPLICATION } from './../../src/ts/ifc-schema';
+import { IfcAPI, LogLevel,ms, Schemas, IFCUNITASSIGNMENT, IFCAXIS2PLACEMENT3D,IFCLENGTHMEASURE,IFCCARTESIANPOINT,IFCAXIS2PLACEMENT2D,IFCCIRCLEPROFILEDEF,IFCDIRECTION,IFCREAL,IFCPOSITIVELENGTHMEASURE,IFCCOLUMN,IFCEXTRUDEDAREASOLID,IFCGLOBALLYUNIQUEID,IFCLABEL,IFCIDENTIFIER } from '../../src/ts/web-ifc-api';
 import { IfcThree } from './web-ifc-three';
 import { Init3DView, InitBasicScene, ClearScene, scene } from './web-ifc-scene';
 import * as Monaco from 'monaco-editor';
-import * as ts_decl from "./ts_src";
+const ts_decl = require("./ts_src");
 import * as ts from "typescript";
 import { exampleCode } from './example';
 
@@ -13,7 +13,7 @@ const wasmPath = window.location.origin + '/';
 ifcAPI.SetWasmPath(wasmPath, true)
 let ifcThree = new IfcThree(ifcAPI);
 
-let timeout = undefined;
+let timeout: ReturnType<typeof setTimeout> | undefined = undefined;
 
 function Edited(monacoEditor: Monaco.editor.IStandaloneCodeEditor)
 {
@@ -94,7 +94,7 @@ window.InitWebIfcViewer = async (monacoEditor: Monaco.editor.IStandaloneCodeEdit
 async function changeLogLevel() 
 {
     let fileInput = <HTMLInputElement>document.getElementById('logLevel');
-    ifcAPI.SetLogLevel(fileInput.value);
+    ifcAPI.SetLogLevel(parseInt(fileInput.value) as LogLevel);
     console.log("Log Level Set to:"+fileInput.value);
 }
 
@@ -104,7 +104,7 @@ async function runCode() {
   scene.clear();
   InitBasicScene();
 
-  let code = window.localStorage.getItem('code');
+  let code = window.localStorage.getItem('code') || '';
   let compiled = ts.transpileModule(code, { compilerOptions: { module: ts.ModuleKind.CommonJS }})
 
   // this is where we do evil stuff
