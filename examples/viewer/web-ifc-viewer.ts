@@ -161,7 +161,10 @@ async function clearMem() {
 
 async function fileInputChanged() {
   let fileInput = <HTMLInputElement>document.getElementById('finput');
-  if (fileInput.files.length == 0) return console.log('No files selected!');
+  if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+    console.log('No files selected!');
+    return;
+  }
   const file = fileInput.files[0];
   const reader = getFileReader(fileInput);
   reader.readAsArrayBuffer(file);

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>web-ifc-viewer</title>
-    <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs/editor/editor.main.min.css">
+    <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs/editor/editor.main.min.css" id="monaco-editor-style">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -11,17 +11,19 @@
     <div id="viewer-container">
         <div id="3dcontainer"></div>
         <div class="controls">
-            <input type="button" id="runcode" value="Run Code"/>
-            <input type="file" id="finput"/>
-            <input type="button" id="cmem" value="Clear Memory"/>
-            <input type="button" id="rcode" value="Reset Editor"/>
-            <label for="logLevel">Log Level:</label>
-            <select id="logLevel">
-                <option value="6">Off</option>
-                <option value="4" selected>Error</option>
-                <option value="1">Debug</option>
-                <option value="3">Warn</option>
-            </select>
+            <input type="button" id="runcode" value="Run Code" class="control-button"/>
+            <input type="file" id="finput" class="control-input" accept=".ifc"/>
+            <input type="button" id="cmem" value="Clear Memory" class="control-button"/>
+            <input type="button" id="rcode" value="Reset Editor" class="control-button"/>
+            <div class="log-level-container">
+                <label for="logLevel">Log Level:</label>
+                <select id="logLevel" class="control-select">
+                    <option value="6">Off</option>
+                    <option value="4" selected>Error</option>
+                    <option value="3">Warn</option>
+                    <option value="1">Debug</option>
+                </select>
+            </div>
         </div>
     </div>
 
@@ -39,15 +41,35 @@
             importScripts('https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs/base/worker/workerMain.min.js');
         `], { type: 'text/javascript' }));
         require(["vs/editor/editor.main"], function () {
+            // Define custom theme
+            monaco.editor.defineTheme('custom-dark', {
+                base: 'vs-dark',
+                inherit: true,
+                rules: [
+                    { token: 'keyword', foreground: '569cd6' },
+                    { token: 'type', foreground: '4ec9b0' },
+                    { token: 'number', foreground: 'b5cea8' },
+                    { token: 'string', foreground: 'ce9178' },
+                    { token: 'identifier', foreground: '9cdcfe' },
+                    { token: 'delimiter', foreground: 'd4d4d4' }
+                ],
+                colors: {
+                    'editor.background': '#1e1e1e',
+                    'editor.foreground': '#d4d4d4',
+                    'editor.lineHighlightBackground': '#2d2d2d',
+                    'editorLineNumber.foreground': '#858585'
+                }
+            });
+
             let editor = monaco.editor.create(document.getElementById('container'), {
                 value: '',
                 language: 'typescript',
-                theme: 'vs-dark',
+                theme: 'custom-dark',
                 minimap: { enabled: false },
                 scrollBeyondLastLine: false,
-                fontSize: 13,
-                fontFamily: 'Menlo, Monaco, "Courier New", monospace',
-                lineHeight: 20,
+                fontSize: 14,
+                fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                lineHeight: 21,
                 lineNumbers: 'on',
                 renderLineHighlight: 'all',
                 automaticLayout: true,
@@ -57,11 +79,16 @@
                     useShadows: true,
                     verticalHasArrows: false,
                     horizontalHasArrows: false,
-                    verticalScrollbarSize: 10,
-                    horizontalScrollbarSize: 10
+                    verticalScrollbarSize: 12,
+                    horizontalScrollbarSize: 12
                 },
                 renderWhitespace: 'none',
-                wordWrap: 'off'
+                wordWrap: 'off',
+                fixedOverflowWidgets: true,
+                contextmenu: true,
+                mouseWheelZoom: true,
+                quickSuggestions: true,
+                renderControlCharacters: false
             });
             window.InitMonaco(monaco);
             window.InitWebIfcViewer(editor);
