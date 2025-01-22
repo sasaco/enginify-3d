@@ -8,9 +8,9 @@ import * as ts from "typescript";
 import { exampleCode } from './example';
 
 let ifcAPI = new IfcAPI();
-// Use absolute path without credentials for WASM loading
-const wasmPath = window.location.origin + '/';
-ifcAPI.SetWasmPath(wasmPath, true)
+// Use relative path for WASM loading
+const wasmPath = './';
+ifcAPI.SetWasmPath(wasmPath, false)
 let ifcThree = new IfcThree(ifcAPI);
 
 let timeout: ReturnType<typeof setTimeout> | undefined = undefined;
