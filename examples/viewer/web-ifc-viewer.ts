@@ -71,24 +71,48 @@ function initMonacoEditor(monacoEditor: Monaco.editor.IStandaloneCodeEditor)
     }, 1000);
 }
 
-if (typeof window != 'undefined')
-{
-//@ts-ignore
-window.InitWebIfcViewer = async (monacoEditor: Monaco.editor.IStandaloneCodeEditor) => {
+// Initialize viewer function
+async function initWebIfcViewer(monacoEditor: Monaco.editor.IStandaloneCodeEditor) {
   await ifcAPI.Init();
   initMonacoEditor(monacoEditor);
   const fileInput = document.getElementById('finput');
-  fileInput.addEventListener('change', fileInputChanged);
   const codereset = document.getElementById('rcode');
-  codereset.addEventListener('click', resetCode);
   const coderun = document.getElementById('runcode');
-  coderun.addEventListener('click', runCode);
   const clearmem = document.getElementById('cmem');
-  clearmem.addEventListener('click', clearMem);
   const changeLogLevelSelect = document.getElementById('logLevel');
+  
+  if (!fileInput || !codereset || !coderun || !clearmem || !changeLogLevelSelect) {
+    console.error('Required DOM elements not found');
+    return;
+  }
+
+  fileInput.addEventListener('change', fileInputChanged);
+  codereset.addEventListener('click', resetCode);
+  coderun.addEventListener('click', runCode);
+  clearmem.addEventListener('click', clearMem);
   changeLogLevelSelect.addEventListener('change', changeLogLevel);
   Init3DView();
-};
+}
+
+// Expose functions to window
+if (typeof window !== 'undefined') {
+  (window as any).InitWebIfcViewer = initWebIfcViewer;
+  (window as any).InitMonaco = (monaco: any) => {
+    // validation settings
+    monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+      noSemanticValidation: true,
+      noSyntaxValidation: true
+    });
+    
+    // compiler options
+    monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+      target: monaco.languages.typescript.ScriptTarget.ES6,
+      allowNonTsExtensions: true
+    });
+    
+    console.log(monaco.languages.typescript.typescriptDefaults.addExtraLib(ts_decl.ifc_schema));
+    console.log(monaco.languages.typescript.typescriptDefaults.addExtraLib(ts_decl.wifcapi));
+  };
 }
 
 async function changeLogLevel() 
