@@ -3,6 +3,11 @@
  * @module web-ifc
  */
 import { IfcLineObject } from "./ifc-schema";
+declare global {
+    interface Window {
+        WebIFCWasm: any;
+    }
+}
 export * from "./ifc-schema";
 import { Properties } from "./helpers/properties";
 export { Properties };
