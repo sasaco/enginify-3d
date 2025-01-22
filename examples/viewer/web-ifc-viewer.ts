@@ -9,7 +9,7 @@ import { exampleCode } from './example';
 
 let ifcAPI = new IfcAPI();
 // Use relative path for WASM loading
-const wasmPath = './';
+const wasmPath = './web-ifc';
 ifcAPI.SetWasmPath(wasmPath, false)
 let ifcThree = new IfcThree(ifcAPI);
 

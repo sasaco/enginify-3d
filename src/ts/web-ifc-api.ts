@@ -22,15 +22,7 @@ import {
     SchemaNames
 } from "./ifc-schema";
 
-declare var __WASM_PATH__:string;
-
 let WebIFCWasm: any;
-
-let currentScriptPath: string;
-if (typeof document !== 'undefined') {
-    const currentScriptData  = (document.currentScript as HTMLScriptElement);
-    if (currentScriptData?.src !== undefined) currentScriptPath = currentScriptData.src.substring(0, currentScriptData.src.lastIndexOf("/") + 1) ;
-}
 
 export * from "./ifc-schema";
 import { Properties } from "./helpers/properties";
@@ -184,21 +176,16 @@ export class IfcAPI {
                 try {
                     WebIFCWasm = require("./web-ifc-mt");
                 } catch (ex){
-                    WebIFCWasm = require(__WASM_PATH__);
+                    WebIFCWasm = require("./web-ifc");
                 }
-            } else WebIFCWasm = require(__WASM_PATH__);
+            } else WebIFCWasm = require("./web-ifc");
         }
         
         if (WebIFCWasm && this.wasmModule == undefined) {
             let locateFileHandler: LocateFileHandlerFn = (path, prefix) => {
                 // when the wasm module requests the wasm file, we redirect to include the user specified path
                 if (path.endsWith(".wasm")) {
-                    let finalPath;
-                    if (this.isWasmPathAbsolute) {
-                        finalPath = this.wasmPath + path;
-                    } else {
-                        finalPath = (currentScriptPath !== undefined ? currentScriptPath : prefix) + this.wasmPath + path;
-                    }
+                    const finalPath = this.wasmPath + path;
                     // Clean any credentials from the URL
                     if (finalPath.includes('@')) {
                         try {
@@ -214,7 +201,7 @@ export class IfcAPI {
                     return finalPath;
                 }
                 // otherwise use the default path
-                return (currentScriptPath !== undefined ? currentScriptPath : prefix) + path;
+                return prefix + path;
             }
 
             //@ts-ignore
