@@ -1,19 +1,19 @@
-import { IfcApplication } from './../../src/ifc-schema';
-import { IfcAPI, LogLevel,ms, Schemas, IFCUNITASSIGNMENT, IFCAXIS2PLACEMENT3D,IFCLENGTHMEASURE,IFCCARTESIANPOINT,IFCAXIS2PLACEMENT2D,IFCCIRCLEPROFILEDEF,IFCDIRECTION,IFCREAL,IFCPOSITIVELENGTHMEASURE,IFCCOLUMN,IFCEXTRUDEDAREASOLID,IFCGLOBALLYUNIQUEID,IFCLABEL,IFCIDENTIFIER } from '../../dist/web-ifc-api';
+import { IFCAPPLICATION } from './../../src/ts/ifc-schema';
+import { IfcAPI, LogLevel,ms, Schemas, IFCUNITASSIGNMENT, IFCAXIS2PLACEMENT3D,IFCLENGTHMEASURE,IFCCARTESIANPOINT,IFCAXIS2PLACEMENT2D,IFCCIRCLEPROFILEDEF,IFCDIRECTION,IFCREAL,IFCPOSITIVELENGTHMEASURE,IFCCOLUMN,IFCEXTRUDEDAREASOLID,IFCGLOBALLYUNIQUEID,IFCLABEL,IFCIDENTIFIER } from '../../src/ts/web-ifc-api';
 import { IfcThree } from './web-ifc-three';
 import { Init3DView, InitBasicScene, ClearScene, scene } from './web-ifc-scene';
 import * as Monaco from 'monaco-editor';
-import * as ts_decl from "./ts_src";
+const ts_decl = require("./ts_src");
 import * as ts from "typescript";
 import { exampleCode } from './example';
 
 let ifcAPI = new IfcAPI();
-// Use absolute path without credentials for WASM loading
-const wasmPath = window.location.origin + '/';
+// Use absolute path for WASM loading
+const wasmPath = window.location.origin + '/web-ifc';
 ifcAPI.SetWasmPath(wasmPath, true)
 let ifcThree = new IfcThree(ifcAPI);
 
-let timeout = undefined;
+let timeout: ReturnType<typeof setTimeout> | undefined = undefined;
 
 function Edited(monacoEditor: Monaco.editor.IStandaloneCodeEditor)
 {
@@ -71,30 +71,54 @@ function initMonacoEditor(monacoEditor: Monaco.editor.IStandaloneCodeEditor)
     }, 1000);
 }
 
-if (typeof window != 'undefined')
-{
-//@ts-ignore
-window.InitWebIfcViewer = async (monacoEditor: Monaco.editor.IStandaloneCodeEditor) => {
+// Initialize viewer function
+async function initWebIfcViewer(monacoEditor: Monaco.editor.IStandaloneCodeEditor) {
   await ifcAPI.Init();
   initMonacoEditor(monacoEditor);
   const fileInput = document.getElementById('finput');
-  fileInput.addEventListener('change', fileInputChanged);
   const codereset = document.getElementById('rcode');
-  codereset.addEventListener('click', resetCode);
   const coderun = document.getElementById('runcode');
-  coderun.addEventListener('click', runCode);
   const clearmem = document.getElementById('cmem');
-  clearmem.addEventListener('click', clearMem);
   const changeLogLevelSelect = document.getElementById('logLevel');
+  
+  if (!fileInput || !codereset || !coderun || !clearmem || !changeLogLevelSelect) {
+    console.error('Required DOM elements not found');
+    return;
+  }
+
+  fileInput.addEventListener('change', fileInputChanged);
+  codereset.addEventListener('click', resetCode);
+  coderun.addEventListener('click', runCode);
+  clearmem.addEventListener('click', clearMem);
   changeLogLevelSelect.addEventListener('change', changeLogLevel);
   Init3DView();
-};
+}
+
+// Expose functions to window
+if (typeof window !== 'undefined') {
+  (window as any).InitWebIfcViewer = initWebIfcViewer;
+  (window as any).InitMonaco = (monaco: any) => {
+    // validation settings
+    monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+      noSemanticValidation: true,
+      noSyntaxValidation: true
+    });
+    
+    // compiler options
+    monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+      target: monaco.languages.typescript.ScriptTarget.ES6,
+      allowNonTsExtensions: true
+    });
+    
+    console.log(monaco.languages.typescript.typescriptDefaults.addExtraLib(ts_decl.ifc_schema));
+    console.log(monaco.languages.typescript.typescriptDefaults.addExtraLib(ts_decl.wifcapi));
+  };
 }
 
 async function changeLogLevel() 
 {
     let fileInput = <HTMLInputElement>document.getElementById('logLevel');
-    ifcAPI.SetLogLevel(fileInput.value);
+    ifcAPI.SetLogLevel(parseInt(fileInput.value) as LogLevel);
     console.log("Log Level Set to:"+fileInput.value);
 }
 
@@ -104,7 +128,7 @@ async function runCode() {
   scene.clear();
   InitBasicScene();
 
-  let code = window.localStorage.getItem('code');
+  let code = window.localStorage.getItem('code') || '';
   let compiled = ts.transpileModule(code, { compilerOptions: { module: ts.ModuleKind.CommonJS }})
 
   // this is where we do evil stuff

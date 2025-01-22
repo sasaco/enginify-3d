@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>web-ifc-viewer</title>
+    <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs/editor/editor.main.min.css">
+    <style>
+        body {
+            margin: 0px;
+            padding: 0px;
+            display: flex;
+            flex-direction: row;
+            overflow: hidden;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="container" style="width:40%; border:1px solid black;"></div>
+    <div style="width:60%; height: 100%;">
+        <div id="3dcontainer" style="width:100%; height: 90%;"></div>
+        <input type="button" id="runcode" value="Run Code"/>
+        <input type="file" id="finput">
+        <input type="button" id="cmem" value="Clear Memory"/>
+        <input type="button" id="rcode" value="Reset Editor"/>
+        Log Level: <select id="logLevel">
+            <option value="6">Off</option>
+            <option value="4" selected>Error</option>
+            <option value="1">Debug</option>
+            <option value="3">Warn</option>
+        </select>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs/loader.min.js"></script>
+    <script src="web-ifc.js"></script>
+<script src="web-ifc-viewer.js"></script>
+    <script src="ts_src.js"></script>
+    <script>
+        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs' }});
+        window.MonacoEnvironment = { getWorkerUrl: () => proxy };
+        let proxy = URL.createObjectURL(new Blob([`
+            self.MonacoEnvironment = {
+                baseUrl: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min'
+            };
+            importScripts('https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs/base/worker/workerMain.min.js');
+        `], { type: 'text/javascript' }));
+        require(["vs/editor/editor.main"], function () {
+            let editor = monaco.editor.create(document.getElementById('container'), {
+                value: '',
+                language: 'typescript',
+                theme: 'vs-dark'
+            });
+            window.InitMonaco(monaco);
+            window.InitWebIfcViewer(editor);
+        });
+    </script>
+</body>
+</html>
