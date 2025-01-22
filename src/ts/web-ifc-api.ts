@@ -192,7 +192,8 @@ export class IfcAPI {
             let locateFileHandler: LocateFileHandlerFn = (path, prefix) => {
                 // when the wasm module requests the wasm file, we redirect to include the user specified path
                 if (path.endsWith(".wasm")) {
-                    const finalPath = this.wasmPath + path;
+                    // Use the provided path directly when absolute
+                    const finalPath = this.isWasmPathAbsolute ? this.wasmPath + '.wasm' : this.wasmPath + path;
                     // Clean any credentials from the URL
                     if (finalPath.includes('@')) {
                         try {

@@ -8,9 +8,9 @@ import * as ts from "typescript";
 import { exampleCode } from './example';
 
 let ifcAPI = new IfcAPI();
-// Use relative path for WASM loading
-const wasmPath = './web-ifc';
-ifcAPI.SetWasmPath(wasmPath, false)
+// Use absolute path for WASM loading
+const wasmPath = window.location.origin + '/web-ifc';
+ifcAPI.SetWasmPath(wasmPath, true)
 let ifcThree = new IfcThree(ifcAPI);
 
 let timeout: ReturnType<typeof setTimeout> | undefined = undefined;
