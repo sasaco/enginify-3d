@@ -18,7 +18,7 @@ function Init3DView() {
   controls = new OrbitControls(camera, renderer.domElement);
 
 
-  scene.background = new THREE.Color(0x8cc7de);
+  scene.background = new THREE.Color(0x87ceeb);
 
   InitBasicScene();
 
