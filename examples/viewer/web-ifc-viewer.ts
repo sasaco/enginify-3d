@@ -1,66 +1,140 @@
 import { IFCAPPLICATION } from './../../src/ts/ifc-schema';
 import { IfcAPI, LogLevel,ms, Schemas, IFCUNITASSIGNMENT, IFCAXIS2PLACEMENT3D,IFCLENGTHMEASURE,IFCCARTESIANPOINT,IFCAXIS2PLACEMENT2D,IFCCIRCLEPROFILEDEF,IFCDIRECTION,IFCREAL,IFCPOSITIVELENGTHMEASURE,IFCCOLUMN,IFCEXTRUDEDAREASOLID,IFCGLOBALLYUNIQUEID,IFCLABEL,IFCIDENTIFIER } from '../../src/ts/web-ifc-api';
-import { IfcThree } from './web-ifc-three';
+// Import Three.js components
+declare const THREE: any;
+declare const OrbitControls: any;
 import { Init3DView, InitBasicScene, ClearScene, scene } from './web-ifc-scene';
-import * as Monaco from 'monaco-editor';
+import { IfcThree } from './web-ifc-three';
+// Monaco and TypeScript imports
+declare const monaco: any;
+declare const require: any;
 const ts_decl = require("./ts_src");
 import * as ts from "typescript";
-import { exampleCode } from './example';
+
+// Declare global window interface extensions
+declare global {
+    interface Window {
+        ifcAPI: IfcAPI;
+        IFC4: {
+            IfcProfileTypeEnum: {
+                AREA: number;
+            };
+        };
+        exampleCode: string;
+    }
+}
+
+// Initialize default example code
+const defaultExampleCode = `
+interface pt {
+    x: number, y: number, z: number;
+}
+
+const gridSize = 6;
+
+let dir: pt =  { x: 0, y: 0, z: 1 };
+let rad: number = 0.25;
+let len: number = 2;
+let direction = ifcAPI.CreateIfcEntity(model,IFCDIRECTION, [ifcAPI.CreateIfcType(model,IFCREAL,dir.x), ifcAPI.CreateIfcType(model,IFCREAL,dir.y), ifcAPI.CreateIfcType(model,IFCREAL,dir.z)]);
+let profileLocation = ifcAPI.CreateIfcEntity(model,IFCCARTESIANPOINT, [ifcAPI.CreateIfcType(model,IFCLENGTHMEASURE,0), ifcAPI.CreateIfcType(model,IFCLENGTHMEASURE,0)]);
+let profileAxis = ifcAPI.CreateIfcEntity(model,IFCAXIS2PLACEMENT2D, profileLocation, null);
+let profile =  ifcAPI.CreateIfcEntity(model, IFCCIRCLEPROFILEDEF, 1, ifcAPI.CreateIfcType(model,IFCLABEL,'column-prefab'), profileAxis, ifcAPI.CreateIfcType(model,IFCPOSITIVELENGTHMEASURE,rad));   
+
+for (let i = 0; i < gridSize; i++) {
+    for (let j = 0; j < gridSize; j++) {
+    
+        let pos:pt = {x: i, y: j, z: 0};
+   
+        let location = ifcAPI.CreateIfcEntity(model,IFCCARTESIANPOINT, [ifcAPI.CreateIfcType(model,IFCLENGTHMEASURE,pos.x), ifcAPI.CreateIfcType(model,IFCLENGTHMEASURE,pos.y),ifcAPI.CreateIfcType(model,IFCLENGTHMEASURE,pos.z)]);
+        let placement= ifcAPI.CreateIfcEntity(model, IFCAXIS2PLACEMENT3D, location, null, null);
+        
+        let solid = ifcAPI.CreateIfcEntity(model, IFCEXTRUDEDAREASOLID, profile, placement, direction, ifcAPI.CreateIfcType(model,IFCPOSITIVELENGTHMEASURE,len));
+
+        let column = ifcAPI.CreateIfcEntity(model,IFCCOLUMN, ifcAPI.CreateIfcType(model, IFCGLOBALLYUNIQUEID,"GUID"), null,ifcAPI.CreateIfcType(model,IFCLABEL,"name"),null, ifcAPI.CreateIfcType(model,IFCLABEL,"label"),  placement, solid,ifcAPI.CreateIfcType(model,IFCIDENTIFIER,"sadf"), null);
+
+        ifcAPI.WriteLine(model, column);
+    }
+}`;
+
+// Set window.exampleCode to default
+window.exampleCode = defaultExampleCode;
 
 let ifcAPI = new IfcAPI();
-// Use absolute path for WASM loading
-const wasmPath = window.location.origin + '/web-ifc';
-ifcAPI.SetWasmPath(wasmPath, true)
+
+// Initialize API and expose to window
+async function initializeAPI() {
+    try {
+        console.log("Starting IFC API initialization...");
+        
+        // Set WASM path before any other operations
+        console.log("Setting WASM path...");
+        // Set path to './web-ifc/' to match our directory structure
+        ifcAPI.SetWasmPath('./web-ifc/');
+        console.log("WASM path set to './web-ifc/'");
+        
+        // List expected WASM files for verification
+        const wasmFiles = [
+            'web-ifc.wasm',
+            'web-ifc-mt.worker.js',
+            'web-ifc-mt.wasm'
+        ];
+        console.log("Expected WASM files:", wasmFiles);
+        
+        console.log("Checking WASM file URLs:", wasmFiles);
+        
+        // Initialize API with proper WASM loading
+        try {
+            console.log("Attempting to initialize WASM module...");
+            await ifcAPI.Init();
+            console.log("WASM module initialization completed");
+        } catch (error) {
+            console.error("WASM initialization error:", error);
+            throw error;
+        }
+        
+        // Verify WASM module initialization
+        if (!ifcAPI.wasmModule) {
+            console.error("WASM module verification failed");
+            throw new Error("WASM module not initialized properly");
+        }
+        
+        console.log("IFC API initialization successful");
+        
+        // Expose initialized API and IFC4 to window
+        window.ifcAPI = ifcAPI;
+        window.IFC4 = { IfcProfileTypeEnum: { AREA: 1 } };
+        return true;
+    } catch (error) {
+        console.error("Failed to initialize IFC API:", error);
+        return false;
+    }
+}
+
+// Initialize Three.js scene
+Init3DView();
+
 let ifcThree = new IfcThree(ifcAPI);
 
 let timeout: ReturnType<typeof setTimeout> | undefined = undefined;
 
-function Edited(monacoEditor: Monaco.editor.IStandaloneCodeEditor)
-{
+function Edited(monacoEditor: any) {
     let code = monacoEditor.getValue();
-
     window.localStorage.setItem('code', code);
     console.log("Saved code...");
-
 }
 
-if (typeof window != 'undefined')
-{
-//@ts-ignore
-window.InitMonaco = (monaco: any) => {
-    console.log(ts_decl.ifc_schema);
-    // validation settings
-    monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
-        noSemanticValidation: true,
-        noSyntaxValidation: true
-    });
-    
-    // compiler options
-    monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
-        target: monaco.languages.typescript.ScriptTarget.ES6,
-        allowNonTsExtensions: true
-    });
-    //@ts-ignore
-    console.log(monaco.languages.typescript.typescriptDefaults.addExtraLib(ts_decl.ifc_schema));
-    console.log(monaco.languages.typescript.typescriptDefaults.addExtraLib(ts_decl.wifcapi));
-}
-}
+// InitMonaco is defined below
 
-function initMonacoEditor(monacoEditor: Monaco.editor.IStandaloneCodeEditor)
-{
+function initMonacoEditor(monacoEditor: any) {
     let item = window.localStorage.getItem("code");
-    if (item)
-    {
+    if (item) {
         monacoEditor.setValue(item);
-    }
-    else
-    {
-        monacoEditor.setValue(exampleCode);
+    } else {
+        monacoEditor.setValue(window.exampleCode);
     }
 
-    monacoEditor.onDidChangeModelContent((e) => {
-        if (timeout)
-        {
+    monacoEditor.onDidChangeModelContent((e: any) => {
+        if (timeout) {
             clearTimeout(timeout);
         }
         timeout = setTimeout(() => Edited(monacoEditor), 1000);
@@ -72,9 +146,39 @@ function initMonacoEditor(monacoEditor: Monaco.editor.IStandaloneCodeEditor)
 }
 
 // Initialize viewer function
-async function initWebIfcViewer(monacoEditor: Monaco.editor.IStandaloneCodeEditor) {
-  await ifcAPI.Init();
-  initMonacoEditor(monacoEditor);
+async function initWebIfcViewer(monacoEditor: any) {
+  try {
+    // Initialize Three.js scene first
+    Init3DView();
+    
+    // Ensure proper IFC API initialization
+    console.log("Initializing IFC API...");
+    const success = await initializeAPI();
+    if (!success) {
+      throw new Error('Failed to initialize IFC API');
+    }
+    console.log("IFC API initialized successfully");
+    
+    initMonacoEditor(monacoEditor);
+    const fileInput = document.getElementById('finput');
+    const codereset = document.getElementById('rcode');
+    const coderun = document.getElementById('runcode');
+    const clearmem = document.getElementById('cmem');
+    const changeLogLevelSelect = document.getElementById('logLevel');
+    
+    if (!fileInput || !codereset || !coderun || !clearmem || !changeLogLevelSelect) {
+      throw new Error('Required DOM elements not found');
+    }
+
+    fileInput.addEventListener('change', async (e) => await fileInputChanged());
+    codereset.addEventListener('click', async (e) => await resetCode());
+    coderun.addEventListener('click', async (e) => await runCode());
+    clearmem.addEventListener('click', async (e) => await clearMem());
+    changeLogLevelSelect.addEventListener('change', async (e) => await changeLogLevel());
+  } catch (error) {
+    console.error('Failed to initialize viewer:', error);
+    throw error;
+  }
   const fileInput = document.getElementById('finput');
   const codereset = document.getElementById('rcode');
   const coderun = document.getElementById('runcode');
@@ -86,33 +190,36 @@ async function initWebIfcViewer(monacoEditor: Monaco.editor.IStandaloneCodeEdito
     return;
   }
 
-  fileInput.addEventListener('change', fileInputChanged);
-  codereset.addEventListener('click', resetCode);
-  coderun.addEventListener('click', runCode);
-  clearmem.addEventListener('click', clearMem);
-  changeLogLevelSelect.addEventListener('change', changeLogLevel);
+  fileInput.addEventListener('change', async (e) => await fileInputChanged());
+  codereset.addEventListener('click', async (e) => await resetCode());
+  coderun.addEventListener('click', async (e) => await runCode());
+  clearmem.addEventListener('click', async (e) => await clearMem());
+  changeLogLevelSelect.addEventListener('change', async (e) => await changeLogLevel());
   Init3DView();
+}
+
+// Initialize Monaco function
+function InitMonaco(monaco: any) {
+  // validation settings
+  monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+    noSemanticValidation: true,
+    noSyntaxValidation: true
+  });
+  
+  // compiler options
+  monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+    target: monaco.languages.typescript.ScriptTarget.ES6,
+    allowNonTsExtensions: true
+  });
+  
+  console.log(monaco.languages.typescript.typescriptDefaults.addExtraLib(ts_decl.ifc_schema));
+  console.log(monaco.languages.typescript.typescriptDefaults.addExtraLib(ts_decl.wifcapi));
 }
 
 // Expose functions to window
 if (typeof window !== 'undefined') {
   (window as any).InitWebIfcViewer = initWebIfcViewer;
-  (window as any).InitMonaco = (monaco: any) => {
-    // validation settings
-    monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
-      noSemanticValidation: true,
-      noSyntaxValidation: true
-    });
-    
-    // compiler options
-    monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
-      target: monaco.languages.typescript.ScriptTarget.ES6,
-      allowNonTsExtensions: true
-    });
-    
-    console.log(monaco.languages.typescript.typescriptDefaults.addExtraLib(ts_decl.ifc_schema));
-    console.log(monaco.languages.typescript.typescriptDefaults.addExtraLib(ts_decl.wifcapi));
-  };
+  (window as any).InitMonaco = InitMonaco;
 }
 
 async function changeLogLevel() 
@@ -123,33 +230,60 @@ async function changeLogLevel()
 }
 
 async function runCode() {
-  let model = ifcAPI.CreateModel({schema: Schemas.IFC4});
+  try {
+    // Ensure API is properly initialized with WASM module
+    if (!window.ifcAPI || !window.ifcAPI.wasmModule) {
+      console.log("IFC API not initialized or WASM module missing, attempting reinitialization...");
+      await clearMem(); // Clear any existing state
+      const success = await initializeAPI();
+      if (!success) {
+        throw new Error("Failed to initialize IFC API");
+      }
+    }
+    
+    console.log("Creating IFC model...");
+    const model = window.ifcAPI.CreateModel({schema: Schemas.IFC4});
+    
+    scene.clear();
+    InitBasicScene();
 
-  scene.clear();
-  InitBasicScene();
+    const code = window.localStorage.getItem('code') || '';
+    const compiled = ts.transpileModule(code, { compilerOptions: { module: ts.ModuleKind.CommonJS }});
 
-  let code = window.localStorage.getItem('code') || '';
-  let compiled = ts.transpileModule(code, { compilerOptions: { module: ts.ModuleKind.CommonJS }})
+    // Execute the compiled code
+    console.log(` --- Starting Code Execution!`);
+    eval(`(function (model, ifcAPI) {
+      const IFCAXIS2PLACEMENT3D = ${IFCAXIS2PLACEMENT3D};
+      const IFCLENGTHMEASURE = ${IFCLENGTHMEASURE};
+      const IFCCARTESIANPOINT = ${IFCCARTESIANPOINT};
+      const IFCAXIS2PLACEMENT2D = ${IFCAXIS2PLACEMENT2D};
+      const IFCCIRCLEPROFILEDEF = ${IFCCIRCLEPROFILEDEF};
+      const IFCDIRECTION = ${IFCDIRECTION};
+      const IFCREAL = ${IFCREAL};
+      const IFCPOSITIVELENGTHMEASURE = ${IFCPOSITIVELENGTHMEASURE};
+      const IFCCOLUMN = ${IFCCOLUMN};
+      const IFCEXTRUDEDAREASOLID = ${IFCEXTRUDEDAREASOLID};
+      const IFCGLOBALLYUNIQUEID = ${IFCGLOBALLYUNIQUEID};
+      const IFCLABEL = ${IFCLABEL};
+      const IFCIDENTIFIER = ${IFCIDENTIFIER};
+      ${compiled.outputText}
+    })`)(model, window.ifcAPI);
+    console.log(` --- Ending Code Execution!`);
 
-  // this is where we do evil stuff
-  {
-      console.log(` --- Starting EVAL!`);
-      eval("(function (ifcAPI,IFCAXIS2PLACEMENT3D,IFCLENGTHMEASURE,IFCCARTESIANPOINT,IFCAXIS2PLACEMENT2D,IFCCIRCLEPROFILEDEF,IFCDIRECTION,IFCREAL,IFCPOSITIVELENGTHMEASURE,IFCCOLUMN,IFCEXTRUDEDAREASOLID,IFCGLOBALLYUNIQUEID,IFCLABEL,IFCIDENTIFIER) {"+compiled.outputText+"})")(ifcAPI,IFCAXIS2PLACEMENT3D,IFCLENGTHMEASURE,IFCCARTESIANPOINT,IFCAXIS2PLACEMENT2D,IFCCIRCLEPROFILEDEF,IFCDIRECTION,IFCREAL,IFCPOSITIVELENGTHMEASURE,IFCCOLUMN,IFCEXTRUDEDAREASOLID,IFCGLOBALLYUNIQUEID,IFCLABEL,IFCIDENTIFIER);
-      console.log(` --- Ending EVAL!`);
+    const ifcData = window.ifcAPI.SaveModel(model);
+    const ifcDataString = new TextDecoder('ascii').decode(ifcData);
+
+    window.ifcAPI.CloseModel(model);
+
+    const m2 = window.ifcAPI.OpenModel(ifcData);
+    ifcThree.LoadAllGeometry(scene, m2);
+  } catch (error) {
+    console.error("Error running code:", error);
   }
-
-
-  let ifcData = ifcAPI.SaveModel(model);
-  let ifcDataString = new TextDecoder('ascii').decode(ifcData);
-
-  ifcAPI.CloseModel(model);
-
-  let m2 = ifcAPI.OpenModel(ifcData);
-  ifcThree.LoadAllGeometry(scene, m2);
 }
 
 async function resetCode() {
-    window.localStorage.setItem('code', exampleCode);
+    window.localStorage.setItem('code', window.exampleCode);
     location.reload();
 }
 
@@ -160,8 +294,11 @@ async function clearMem() {
 }
 
 async function fileInputChanged() {
-  let fileInput = <HTMLInputElement>document.getElementById('finput');
-  if (fileInput.files.length == 0) return console.log('No files selected!');
+  const fileInput = <HTMLInputElement>document.getElementById('finput');
+  if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+    console.log('No files selected!');
+    return;
+  }
   const file = fileInput.files[0];
   const reader = getFileReader(fileInput);
   reader.readAsArrayBuffer(file);

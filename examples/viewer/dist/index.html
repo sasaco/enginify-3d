@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>web-ifc-viewer</title>
+    <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.0/min/vs/editor/editor.main.min.css">
+    <style>
+        body {
+            margin: 0px;
+            padding: 0px;
+            display: flex;
+            flex-direction: row;
+            overflow: hidden;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="container" style="width:40%; border:1px solid black;"></div>
+    <div style="width:60%; height: 100%;">
+        <div id="threecontainer" style="width:100%; height: 90%;"></div>
+        <input type="button" id="runcode" value="Run Code"/>
+        <input type="file" id="finput">
+        <input type="button" id="cmem" value="Clear Memory"/>
+        <input type="button" id="rcode" value="Reset Editor"/>
+        Log Level: <select id="logLevel">
+            <option value="6">Off</option>
+            <option value="4" selected>Error</option>
+            <option value="1">Debug</option>
+            <option value="3">Warn</option>
+        </select>
+    </div>
+
+    <!-- Monaco Editor -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.0/min/vs/loader.min.js"></script>
+    
+    <!-- Three.js and dependencies -->
+    <script src="three.js"></script>
+    <script src="OrbitControls.js"></script>
+    
+    <!-- Web IFC -->
+    <script src="web-ifc/web-ifc.js"></script>
+    <script src="ts_src.js"></script>
+    <script src="web-ifc-viewer.js"></script>
+
+    <!-- Initialize Dependencies -->
+    <script>
+        // Configure Monaco
+        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.0/min/vs' }});
+        window.MonacoEnvironment = {
+            getWorkerUrl: function() {
+                return `data:text/javascript;charset=utf-8,${encodeURIComponent(`
+                    self.MonacoEnvironment = {
+                        baseUrl: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.0/min/'
+                    };
+                    importScripts('https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.0/min/vs/base/worker/workerMain.js');`
+                )}`;
+            }
+        };
+
+        // Wait for all dependencies to load
+        window.addEventListener('load', () => {
+            // Set WASM path for IFC API
+            if (window.ifcAPI) {
+                window.ifcAPI.SetWasmPath('./web-ifc/');
+                console.log('WASM path set to ./web-ifc/');
+            }
+
+            // Initialize Monaco and viewer
+            require(['vs/editor/editor.main'], function() {
+                if (typeof monaco !== 'undefined') {
+                    console.log('Monaco editor loaded');
+                    
+                    // Initialize Monaco
+                    if (typeof window.InitMonaco === 'function') {
+                        window.InitMonaco(monaco);
+                    }
+                    
+                    // Create editor instance
+                    const editor = monaco.editor.create(document.getElementById('container'), {
+                        value: window.exampleCode || '',
+                        language: 'typescript',
+                        theme: 'vs-dark'
+                    });
+                    
+                    // Initialize viewer with editor
+                    if (typeof window.InitWebIfcViewer === 'function') {
+                        window.InitWebIfcViewer(editor);
+                    }
+                }
+            });
+        });
+    </script>
+
+    <!-- Example Code -->
+    <script>
+        window.exampleCode = `
+    interface pt {
+        x: number, y: number, z: number;
+    }
+
+    const gridSize = 6;
+
+    let dir: pt =  { x: 0, y: 0, z: 1 };
+    let rad: number = 0.25;
+    let len: number = 2;
+    let direction = ifcAPI.CreateIfcEntity(model,IFCDIRECTION, [ifcAPI.CreateIfcType(model,IFCREAL,dir.x), ifcAPI.CreateIfcType(model,IFCREAL,dir.y), ifcAPI.CreateIfcType(model,IFCREAL,dir.z)]);
+    let profileLocation = ifcAPI.CreateIfcEntity(model,IFCCARTESIANPOINT, [ifcAPI.CreateIfcType(model,IFCLENGTHMEASURE,0), ifcAPI.CreateIfcType(model,IFCLENGTHMEASURE,0)]);
+    let profileAxis = ifcAPI.CreateIfcEntity(model,IFCAXIS2PLACEMENT2D, profileLocation, null);
+    let profile =  ifcAPI.CreateIfcEntity(model, IFCCIRCLEPROFILEDEF, 1, ifcAPI.CreateIfcType(model,IFCLABEL,'column-prefab'), profileAxis, ifcAPI.CreateIfcType(model,IFCPOSITIVELENGTHMEASURE,rad));   
+
+    for (let i = 0; i < gridSize; i++) {
+        for (let j = 0; j < gridSize; j++) {
+        
+            let pos:pt = {x: i, y: j, z: 0};
+       
+            let location = ifcAPI.CreateIfcEntity(model,IFCCARTESIANPOINT, [ifcAPI.CreateIfcType(model,IFCLENGTHMEASURE,pos.x), ifcAPI.CreateIfcType(model,IFCLENGTHMEASURE,pos.y),ifcAPI.CreateIfcType(model,IFCLENGTHMEASURE,pos.z)]);
+            let placement= ifcAPI.CreateIfcEntity(model, IFCAXIS2PLACEMENT3D, location, null, null);
+            
+            let solid = ifcAPI.CreateIfcEntity(model, IFCEXTRUDEDAREASOLID, profile, placement, direction, ifcAPI.CreateIfcType(model,IFCPOSITIVELENGTHMEASURE,len));
+
+            let column = ifcAPI.CreateIfcEntity(model,IFCCOLUMN, ifcAPI.CreateIfcType(model, IFCGLOBALLYUNIQUEID,"GUID"), null,ifcAPI.CreateIfcType(model,IFCLABEL,"name"),null, ifcAPI.CreateIfcType(model,IFCLABEL,"label"),  placement, solid,ifcAPI.CreateIfcType(model,IFCIDENTIFIER,"sadf"), null);
+
+            ifcAPI.WriteLine(model, column);
+        }
+    }
+`;
+    </script>
+
+</body>
+</html>
