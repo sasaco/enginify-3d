@@ -3,7 +3,6 @@ import { NgbModal, NgbModalRef } from "@ng-bootstrap/ng-bootstrap";
 import { AppComponent } from "../../app.component";
 import { HttpClient, HttpHeaders } from "@angular/common/http";
 
-import { LoginDialogComponent } from "../login-dialog/login-dialog.component";
 import { WaitDialogComponent } from "../wait-dialog/wait-dialog.component";
 
 import * as FileSaver from "file-saver";
@@ -359,17 +358,7 @@ export class MenuComponent implements OnInit {
 
   }
 
-  // ログイン関係 : KeyCloak
-  async logIn() {
-    if (this.electronService.isElectron) {
-      this.app.dialogClose(); // 現在表示中の画面を閉じる
-      this.modalService
-        .open(LoginDialogComponent, { backdrop: false })
-        .result.then((result) => { });
-    } else {
-    }
-  }
-
+  // ログイン関係
   async login(userFlowRequest?: RedirectRequest | PopupRequest, ignoreAlert?: boolean) {
     if (this.electronService.isElectron) {
       this.electronService.ipcRenderer.send(IPC_MESSAGES.LOGIN);

@@ -20,7 +20,6 @@ import { DataHelperModule } from "./providers/data-helper.module";
 import { UserInfoService } from "./providers/user-info.service";
 
 import { MenuComponent } from "./components/menu/menu.component";
-import { LoginDialogComponent } from "./components/login-dialog/login-dialog.component";
 import { WaitDialogComponent } from "./components/wait-dialog/wait-dialog.component";
 import { AlertDialogComponent } from "./components/alert-dialog/alert-dialog.component";
 
@@ -131,7 +130,6 @@ export function MSALGuardConfigFactory(): MsalGuardConfiguration {
   declarations: [
     AppComponent,
     MenuComponent,
-    LoginDialogComponent,
     WaitDialogComponent,
     AlertDialogComponent,
 

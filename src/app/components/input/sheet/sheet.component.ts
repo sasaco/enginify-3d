@@ -194,30 +194,5 @@ export class SheetComponent implements AfterViewInit, OnChanges {
 
   }
 
-  loadStrengthActive = false;
-  @HostListener('document:mouseover', ['$event'])
-  toggleActive(event: Event) {
-    const elements = [
-      { iconId: '#load-strength-info', tableId: '#load-strength-table', activeProp: 'loadStrengthActive' }
-    ];
-  
-    for (let element of elements) {
-      this.handleElementActivation(element, event);
-    }
-  }
 
-  handleElementActivation(element: any, event: Event) {
-    const elQAIcon = window.document.querySelector(element.iconId);
-    const elTable = window.document.querySelector(element.tableId);
-    const grandEl = elQAIcon?.parentElement?.parentElement;
-  
-    this[element.activeProp] = grandEl?.classList.contains('active') || false;
-  
-    if (grandEl?.contains(event.target as Node)) {
-      grandEl.classList.add('active');
-    } else if (elTable.contains(event.target as Node) && this[element.activeProp]) {
-    } else {
-      grandEl?.classList.remove('active');
-    }
-  }  
 }

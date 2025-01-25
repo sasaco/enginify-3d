@@ -19,13 +19,6 @@ module.exports = {
     }
   },  
   plugins: [
-    plugin(/** @param {PluginAPI} api */ function({ addBase }) {
-      addBase({
-        'img': {
-          'max-width': 'none'
-        }
-      })
-    })
   ]
 }
 

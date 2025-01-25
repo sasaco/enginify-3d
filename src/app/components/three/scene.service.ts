@@ -113,12 +113,6 @@ export class SceneService {
     this.gui = new GUI();
     this.gui.domElement.id = "gui_css";
 
-    // 3D・2Dの表示を制御するスイッチの登録
-    // this.gui.add(this.params, "3D").onChange((value) => {
-    //   this.helper.dimension = value ? 3 : 2;
-    //   this.changeGui(this.helper.dimension);
-    // });
-
     // GridHelper の表示・非表示を制御するスイッチの登録
     this.gui.add(this.params, "GridHelper").onChange((value) => {
       this.axisHelper.visible = value;
