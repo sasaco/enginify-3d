@@ -1,17 +1,17 @@
-<div class="title-and-menu" id="disTitle">
-    <div class="icon-area">
-        <ul>
-            <li>
+<div class="relative flex justify-between items-center w-full h-[44px] font-light sm:block sm:text-center print:hidden" id="disTitle">
+    <div class="flex text-xl sm:justify-center">
+        <ul class="flex">
+            <li class="ml-[10px] mr-[30px]">
                 <!-- アイコン -->
                 <div class="flex items-center justify-center w-[26px] h-[26px]">
                     <img class="w-full h-full object-contain" src="assets/icons/icon-64.png" style="width: 26px; height: 26px;" />
                 </div>
             </li>
-            <li>
-                <div ngbDropdown class="dropdownmenu">
-                    <a class="icon file" id="dropdownBasic1" ngbDropdownToggle onfocus="this.blur();">
-                        <img src="assets/icons/icon-file.svg" alt="Icon File">
-                        <div translate class="menu-item">menu.file</div>
+            <li class="list-none inline-block mr-6 font-normal">
+                <div ngbDropdown class="z-[1050]">
+                    <a class="flex items-center whitespace-nowrap hover:cursor-pointer hover:opacity-70 text-white" id="dropdownBasic1" ngbDropdownToggle onfocus="this.blur();">
+                        <img src="assets/icons/icon-file.svg" alt="Icon File" class="h-4 w-4">
+                        <div translate class="inline text-xs font-bold ml-1 pr-3">menu.file</div>
                     </a>
                     <div ngbDropdownMenu aria-labelledby="dropdownBasic1">
                         <!-- 新規作成 -->
@@ -19,10 +19,10 @@
 
                         <!-- ファイルを開く(ブラウザ) -->
                         <ng-container *ngIf="!electronService.isElectron">
-                            <label style="width: 100%; margin: 0px">
-                                <span ngbDropdownItem style="padding: 8px" translate>menu.openFile
+                            <label class="w-full m-0">
+                                <span ngbDropdownItem class="p-2" translate>menu.openFile
                                     <input type="file" accept="application/json" (change)="open($event)"
-                                        style="display: none" />
+                                        class="hidden" />
                                 </span>
                             </label>
                         </ng-container>
@@ -34,21 +34,21 @@
                         </button>
 
                         <!-- ファイルを保存 -->
-                        <button class="save-file" [class.active-save]="user.userProfile" ngbDropdownItem (click)="save()"translate>menu.saveFile</button>
+                        <button class="pointer-events-none opacity-40" [class.pointer-events-auto]="user.userProfile" [class.opacity-100]="user.userProfile" ngbDropdownItem (click)="save()" translate>menu.saveFile</button>
 
                         <a [routerLink]="[{ outlets: { presetOutlet: ['preset'] } }]" routerLinkActive="selected-item" ngbDropdownItem (click)="preset()" translate>menu.select_preset</a>
                         <!--  -->
-                        <button class="save-file" [class.active-save]="user.userProfile" *ngIf="electronService.isElectron" ngbDropdownItem (click)="overWrite()"
+                        <button class="pointer-events-none opacity-40" [class.pointer-events-auto]="user.userProfile" [class.opacity-100]="user.userProfile" *ngIf="electronService.isElectron" ngbDropdownItem (click)="overWrite()"
                             translate>menu.overwrite</button>
                     </div>
                 </div>
             </li>
           
             <!-- 印刷 -->
-            <li>
-                <a [routerLink]="[{ outlets: { printOutlet: ['print'] } }]" (click)="contentsDailogShow(13)" routerLinkActive="selected-item" id="13">
-                    <img src="assets/icons/icon-print.svg" alt="Icon File">
-                    <div translate class="menu-item">menu.print</div>
+            <li class="list-none inline-block mr-6 font-normal">
+                <a [routerLink]="[{ outlets: { printOutlet: ['print'] } }]" (click)="contentsDailogShow(13)" routerLinkActive="selected-item" id="13" class="flex items-center whitespace-nowrap hover:cursor-pointer hover:opacity-70">
+                    <img src="assets/icons/icon-print.svg" alt="Icon File" class="h-4 w-4">
+                    <div translate class="inline text-xs font-bold ml-1 pr-3">menu.print</div>
                 </a>
             </li>
 
@@ -58,31 +58,31 @@
     <div class="title" *ngIf="menuService.fileName ===  '';then init; else file">
     </div>
     <ng-template #init>
-        <h1 class="title-filename">{{'menu.softName'| translate }} ver.{{version}}</h1>
+        <h1 class="absolute left-1/2 -translate-x-1/2 flex text-sm font-bold">{{'menu.softName'| translate }} ver.{{version}}</h1>
     </ng-template>
     <ng-template #file>
-        <div class="file-layout">
-            <h1 class="title-filename">
-                <img src="assets/icons/icon-file.svg" alt="Icon File">
+        <div class="flex gap-1 w-1/2 h-full items-center justify-center">
+            <h1 class="absolute left-1/2 -translate-x-1/2 flex text-sm font-bold">
+                <img src="assets/icons/icon-file.svg" alt="Icon File" class="mr-1">
                 {{menuService.shortenFilename(menuService.fileName)}}</h1>
           </div>
     </ng-template>
 
     
-    <div class="rightArea">
-        <div class="icon-area">
-        <ul>
+    <div class="flex items-center h-7">
+        <div class="flex text-xl sm:justify-center">
+        <ul class="flex">
             <!-- 言語 -->
-            <li>
-                <div class="language-area">
+            <li class="list-none inline-block mr-6 font-normal">
+                <div class="mr-4">
                     <div ngbDropdown>
-                        <a class="icon file" id="dropdownBasic1" ngbDropdownToggle onfocus="this.blur();">
-                        <img src="assets/icons/icon-language.svg" alt="Icon File">
-                        <a class="btn btn-outline-primary" id="language1" 
-                            class="menu-btn lang menu-item" translate>menu.language</a>
+                        <a class="flex items-center whitespace-nowrap hover:cursor-pointer hover:opacity-70 text-white" id="dropdownBasic1" ngbDropdownToggle onfocus="this.blur();">
+                        <img src="assets/icons/icon-language.svg" alt="Icon File" class="h-4 w-4">
+                        <a id="language1" 
+                            class="block w-full hover:cursor-pointer hover:opacity-70 inline text-xs font-bold ml-1 pr-3" translate>menu.language</a>
                         <div ngbDropdownMenu aria-labelledby="language1">
                             <ng-container *ngFor="let index of language.languageIndex | keyvalue">
-                                <a ngbDropdownItem (click)="language.trans(index.key)" class="menu-btn">{{index.value}}</a>
+                                <a ngbDropdownItem (click)="language.trans(index.key)" class="block w-full hover:cursor-pointer hover:opacity-70">{{index.value}}</a>
                             </ng-container>
                         </div>
                         </a>
@@ -91,39 +91,39 @@
             </li>
 
             <!-- help -->
-            <li>
-                <a (click)="goToLink()">
-                    <img src="assets/icons/icon-help.svg" alt="Icon File">
-                    <div translate class="menu-item">menu.help</div>
+            <li class="list-none inline-block mr-6 font-normal">
+                <a (click)="goToLink()" class="flex items-center whitespace-nowrap hover:cursor-pointer hover:opacity-70">
+                    <img src="assets/icons/icon-help.svg" alt="Icon File" class="h-4 w-4">
+                    <div translate class="inline text-xs font-bold ml-1 pr-3">menu.help</div>
                 </a>
             </li>
 
             <!-- chat -->
-            <li>
-                <a (click)="handelClickChat()">
-                    <img src="assets/icons/icon-chat.svg" alt="Icon File">
-                    <div translate class="menu-item">menu.contact</div>
+            <li class="list-none inline-block mr-6 font-normal">
+                <a (click)="handelClickChat()" class="flex items-center whitespace-nowrap hover:cursor-pointer hover:opacity-70">
+                    <img src="assets/icons/icon-chat.svg" alt="Icon File" class="h-4 w-4">
+                    <div translate class="inline text-xs font-bold ml-1 pr-3">menu.contact</div>
                 </a>
             </li>
         </ul>
        </div>
 
        <!-- login -->
-        <div class="login-area">
-            <div *ngIf="user.userProfile as user; else showLogin" class="userInfo">
+        <div class="text-base">
+            <div *ngIf="user.userProfile as user; else showLogin" class="flex items-center">
                 <div ngbDropdown>
-                    <a class="icon file" id="dropdownBasic1" class="menu-btn menu-item" ngbDropdownToggle
+                    <a id="dropdownBasic1" class="block w-full hover:cursor-pointer hover:opacity-70 text-white flex items-center" ngbDropdownToggle
                         onfocus="this.blur();"><i class="far fa-user-circle"></i>{{ user.lastName + user.firstName }}</a>
                     <div ngbDropdownMenu aria-labelledby="dropdownBasic1">
-                        <a (click)="logout()" class="menu-btn logOut menu-item dropdown-item" translate>menu.logout</a>
+                        <a (click)="logout()" class="block w-full hover:cursor-pointer hover:opacity-70 p-1 text-center inline text-xs font-bold ml-1 pr-3 dropdown-item" translate>menu.logout</a>
                     </div>
                 </div>
             </div>
         </div>
         <ng-template #showLogin>
-            <a (click)="login()" class="menu-btn">
+            <a (click)="login()" class="block w-full hover:cursor-pointer hover:opacity-70">
                 <i class="fas fa-sign-in-alt"></i>
-                <p translate class="menu-item dropdown-item">menu.login</p>
+                <p translate class="inline text-xs font-bold ml-1 pr-3 dropdown-item">menu.login</p>
             </a>
         </ng-template>
     </div>
