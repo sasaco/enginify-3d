@@ -3,7 +3,9 @@
         <ul>
             <li>
                 <!-- アイコン -->
-                <img class="w-[26px] h-[26px]" src="assets/icons/icon-64.png" />
+                <div class="flex items-center justify-center w-[26px] h-[26px]">
+                    <img class="w-full h-full object-contain" src="assets/icons/icon-64.png" style="width: 26px; height: 26px;" />
+                </div>
             </li>
             <li>
                 <div ngbDropdown class="dropdownmenu">
@@ -17,10 +19,11 @@
 
                         <!-- ファイルを開く(ブラウザ) -->
                         <ng-container *ngIf="!electronService.isElectron">
-                            <label style="width: 100%; margin: 0px">
-                                <span ngbDropdownItem style="padding: 8px" translate>menu.openFile
+                            <label class="w-full m-0">
+                                <span ngbDropdownItem class="p-2" translate>
+                                    menu.openFile
                                     <input type="file" accept="application/json" (change)="open($event)"
-                                        style="display: none" />
+                                    style="display: none" />
                                 </span>
                             </label>
                         </ng-container>
@@ -30,12 +33,9 @@
                             translate>
                             menu.openFile
                         </button>
-
                         <!-- ファイルを保存 -->
                         <button class="save-file" [class.active-save]="user.userProfile" ngbDropdownItem (click)="save()"translate>menu.saveFile</button>
-
-                        <a [routerLink]="[{ outlets: { presetOutlet: ['preset'] } }]" routerLinkActive="selected-item" ngbDropdownItem (click)="preset()" translate>menu.select_preset</a>
-                        <!--  -->
+                        <!-- 上書き保存 -->
                         <button class="save-file" [class.active-save]="user.userProfile" *ngIf="electronService.isElectron" ngbDropdownItem (click)="overWrite()"
                             translate>menu.overwrite</button>
                     </div>
@@ -44,7 +44,7 @@
           
             <!-- 印刷 -->
             <li>
-                <a [routerLink]="[{ outlets: { printOutlet: ['print'] } }]" (click)="contentsDailogShow(13)" routerLinkActive="selected-item" id="13">
+                <a>
                     <img src="assets/icons/icon-print.svg" alt="Icon File">
                     <div translate class="menu-item">menu.print</div>
                 </a>
@@ -78,11 +78,6 @@
                         <img src="assets/icons/icon-language.svg" alt="Icon File">
                         <a class="btn btn-outline-primary" id="language1" 
                             class="menu-btn lang menu-item" translate>menu.language</a>
-                        <div ngbDropdownMenu aria-labelledby="language1">
-                            <ng-container *ngFor="let index of language.languageIndex | keyvalue">
-                                <a ngbDropdownItem (click)="language.trans(index.key)" class="menu-btn">{{index.value}}</a>
-                            </ng-container>
-                        </div>
                         </a>
                     </div>
                 </div>     

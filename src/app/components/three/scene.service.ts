@@ -1,20 +1,18 @@
-import { LanguagesService } from 'src/app/providers/languages.service';
-import { Injectable,ElementRef } from "@angular/core";
+import { Injectable } from "@angular/core";
 import * as THREE from "three";
-import { ThreeComponent } from "./three.component";
-
 import { GUI } from "three/examples/jsm/libs/lil-gui.module.min.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { OrbitControlsGizmo } from "./libs/OrbitControlsGizmo.js";
-import { CSS2DRenderer, CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
+import { CSS2DRenderer } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 
-import { SafeHtml } from "@angular/platform-browser";
-import { DataHelperModule } from "../../providers/data-helper.module";
+import { DataHelperModule } from 'src/app/providers/data-helper.module';
+
 
 @Injectable({
   providedIn: "root",
 })
 export class SceneService {
+
   // シーン
   private scene: THREE.Scene;
 
@@ -25,7 +23,6 @@ export class SceneService {
   // ギズモ
   private controlsGizmo: HTMLCanvasElement = null;
   private id = null;
-  //private controlsGizmoParent: OrbitControlsGizmo;
 
   // カメラ
   private camera: THREE.PerspectiveCamera | THREE.OrthographicCamera;
@@ -46,10 +43,7 @@ export class SceneService {
   private params: any; // GridHelperの表示制御
 
   // 初期化
-  public constructor(
-    private helper: DataHelperModule,
-    private language: LanguagesService
-    ) {
+  public constructor( private helper: DataHelperModule) {
 
     // シーンを作成
     this.scene = new THREE.Scene();
@@ -58,13 +52,10 @@ export class SceneService {
     this.scene.background = new THREE.Color(0xffffff);
     // レンダラーをバインド
     this.render = this.render.bind(this);
-
     // gui
     this.params = {
-      "3D": false,
       GridHelper: true,
-      Perspective: true,
-      ReDraw: this.render,
+      Perspective: false
     };
   }
 
@@ -125,70 +116,27 @@ export class SceneService {
         this.OrthographicCamera_onChange(value);
     });
    
-    // 再描画するボタンの登録
-    // this.gui.add( this.params, 'ReDraw' ); // あまり使わなかったので コメントアウト
-
-    // gui はデフォルトで、展開状態にしておく
-    // this.gui.open();
+    // gui はデフォルトで、展開しない状態にしておく
     this.gui.close();
+
     // コントロール
     this.addControls();
-
-    // カメラを2Dモードで再登録
-    this.changeGui(this.helper.dimension);
-
   }
 
-  // カメラを切り替える
-  public changeGui(dimension: number) {
-    if (this.gui === undefined) {
-      return;
-    }
 
-    // カメラのGUIを取り出し、可変かどうかを設定する。
-    let camera_gui: any = null;
-    for (const controller of this.gui.controllers) {
-      if (controller.property === "3D") {
-        this.params["3D"] = this.helper.dimension === 3 ? true : false;
-        controller.updateDisplay();
-      }
-      if (controller.property === "Perspective") {
-        camera_gui = controller; // カメラのGUIを取り出す
-        if (dimension === 2) {
-          // 2Dモードであれば、触れないようにする
-          camera_gui.domElement.hidden = true;
-          this.OrthographicCamera_onChange(true);
-        } else {
-          camera_gui.domElement.hidden = false;
-          this.OrthographicCamera_onChange(this.params.Perspective);
-        }
-        break;
-      }
-    }
-
-  }
 
   // カメラを切り替える
   private OrthographicCamera_onChange(value) {
     this.params.Perspective = value;
-
-
     this.initCamera();  // カメラをシーンに登録する
     this.controls.object = this.camera; // OrbitControl の登録カメラを変更
-    if (this.helper.dimension === 2) {
-      // 2次元に切り替わった場合は、ポジションと回転角をリセットする
-      const pos = this.OrthographicCamera.position;
-      this.camera.up = new THREE.Vector3( 0, -1, 0 );
-      this.camera.position.set(pos.x, pos.y, -10);
-      this.controls.target.set(pos.x, pos.y, 0);
-    } else {
-      // 3次元の場合は、ポジションと回転角は引き継ぐ
-      const pos = this.PerspectiveCamera.position;
-      const rot = this.PerspectiveCamera.rotation;
-      this.camera.up = new THREE.Vector3( 0, 0, -1 );
-      this.camera.position.set(pos.x, pos.y, pos.z);
-      this.camera.rotation.set(rot.x, rot.y, rot.z);
-    }
+    // 3次元の場合は、ポジションと回転角は引き継ぐ
+    const pos = this.PerspectiveCamera.position;
+    const rot = this.PerspectiveCamera.rotation;
+    this.camera.up = new THREE.Vector3( 0, 0, -1 );
+    this.camera.position.set(pos.x, pos.y, pos.z);
+    this.camera.rotation.set(rot.x, rot.y, rot.z);
+
     // Gizmoを作り直す
     this.addGizmo();
 
@@ -206,92 +154,16 @@ export class SceneService {
     }
 
     // カメラを登録しなおす
-    if(this.helper.dimension === 3) {
-      // 3次元の場合
-      if (this.params.Perspective) {
-        this.camera = this.PerspectiveCamera;  // 遠近感ありの場合
-      } else {
-        this.camera = this.OrthographicCamera; // 遠近感なしの場合 平行投影するカメラ
-      }
+    if (this.params.Perspective) {
+      this.camera = this.PerspectiveCamera;  // 遠近感ありの場合
+    } else {
+      this.camera = this.OrthographicCamera; // 遠近感なしの場合 平行投影するカメラ
     }
-    else{
-      // 2次元の場合
-      this.camera = this.OrthographicCamera; // 平行投影するカメラ
-    }
-
-    // 3次元なら回転できる、2次元なら回転できないように設定する
-    if (this.controls !== null)
-      this.controls.enableRotate = this.helper.dimension === 3;
 
     this.camera.name = "camera";
     this.scene.add(this.camera);
   }
   
-  public resetCamera() {
-    // 一旦カメラを消す
-    const target = this.scene.getObjectByName("camera");
-    if (target !== undefined) {
-      this.scene.remove(this.camera);
-    }
-    let perspectiveCameraInit = new THREE.PerspectiveCamera(
-      70,
-      this.aspectRatio,
-      0.1,
-      1000
-    );
-    perspectiveCameraInit.position.set(50, 50, -50);
-
-    let orthographicCameraInit = new THREE.OrthographicCamera(
-      -this.Width / 10,
-      this.Width / 10,
-      this.Height / 10,
-      -this.Height / 10,
-      -1000,
-      1000
-    );
-
-    // カメラを登録しなおす
-    if(this.helper.dimension === 3) {
-      // 3次元の場合
-      if (this.params.Perspective) {
-        this.camera = perspectiveCameraInit;  // 遠近感ありの場合
-      } else {
-        this.camera = orthographicCameraInit; // 遠近感なしの場合 平行投影するカメラ
-      }
-    }
-    else{
-      // 2次元の場合
-      this.camera = orthographicCameraInit; // 平行投影するカメラ
-    }
-
-    // 3次元なら回転できる、2次元なら回転できないように設定する
-    if (this.controls !== null)
-      this.controls.enableRotate = this.helper.dimension === 3;
-
-    this.camera.name = "camera";
-    this.scene.add(this.camera);
-    
-    this.controls.object = this.camera; // OrbitControl の登録カメラを変更
-    if (this.helper.dimension === 2) {
-      // 2次元に切り替わった場合は、ポジションと回転角をリセットする
-      const pos = orthographicCameraInit.position;
-      this.camera.up = new THREE.Vector3( 0, -1, 0 );
-      this.camera.position.set(pos.x, pos.y, -10);
-      this.controls.target.set(pos.x, pos.y, 0);
-    } else {
-      // 3次元の場合は、ポジションと回転角は引き継ぐ
-      const pos = perspectiveCameraInit.position;
-      const rot = perspectiveCameraInit.rotation;
-      this.camera.up = new THREE.Vector3( 0, 0, -1 );
-      this.camera.position.set(pos.x, pos.y, pos.z);
-      this.camera.rotation.set(rot.x, rot.y, rot.z);
-    }
-    // Gizmoを作り直す
-    this.addGizmo();
-
-    this.camera.updateMatrix();
-    this.controls.update();
-  }
 
   // 床面を生成する
   private createHelper() {
@@ -306,36 +178,6 @@ export class SceneService {
     this.scene.add(this.GridHelper);
   }
 
-  public setNewHelper(max: number) {
-    // GridHelperの範囲の最大値は最大長さを切り上げた長さ.
-    const Distance = Math.ceil(max / 10) * 10;
-    if (this.GridDistance !== Distance) {
-      // maxDistanceをキーに大きさを設定する。
-      this.createNewScale(Distance);
-      this.GridDistance = Distance;
-    }
-  }
-
-  private createNewScale(Distance: number): void {
-    // AxisHelperをthis.sceneから取り除く.
-    this.scene.remove(this.axisHelper);
-
-    // AxisHelperを新たに作成し、追加する.
-    this.axisHelper = new THREE.AxesHelper(Distance * 2);
-    this.axisHelper.name = "axisHelper";
-    this.scene.add(this.axisHelper);
-
-    // GridHelperをthis.sceneから取り除く.
-    this.scene.remove(this.GridHelper);
-
-    // GridHelperを新たに作成し、追加する.
-    this.GridHelper = new THREE.GridHelper(Distance * 2, 20);
-    this.GridHelper.geometry.rotateX(Math.PI / 2);
-    this.GridHelper.material["opacity"] = 0.2;
-    this.GridHelper.material["transparent"] = true;
-    this.GridHelper.name = "GridHelper";
-    this.scene.add(this.GridHelper);
-  }
 
   // コントロール
   public addControls() {
@@ -344,9 +186,7 @@ export class SceneService {
       this.camera,
       this.labelRenderer.domElement
     );
-    // this.controls.damping = 0.2;
     this.controls.addEventListener("change", this.render);
-    this.controls.enableRotate = this.helper.dimension === 3 ? true : false; // 2次元モードの場合はカメラの回転を無効にする
 
     // Gizmoを作り直す
     this.addGizmo();
@@ -358,18 +198,14 @@ export class SceneService {
     if (this.controlsGizmo !== null) {
       document.body.removeChild(this.controlsGizmo);
     }
-    if (this.helper.dimension === 3) {
-      // Add the Obit Controls Gizmo
-      const controlsGizmo = new OrbitControlsGizmo(this.controls, {
-        size: 100,
-        padding: 8,
-      });
-      // Add the Gizmo domElement to the dom
-      this.controlsGizmo = controlsGizmo.domElement;
-      document.body.appendChild(this.controlsGizmo);
-    } else {
-      this.controlsGizmo = null;
-    }
+    // Add the Obit Controls Gizmo
+    const controlsGizmo = new OrbitControlsGizmo(this.controls, {
+      size: 100,
+      padding: 8,
+    });
+    // Add the Gizmo domElement to the dom
+    this.controlsGizmo = controlsGizmo.domElement;
+    document.body.appendChild(this.controlsGizmo);
   }
 
   // 物体とマウスの交差判定に用いるレイキャスト
@@ -448,13 +284,6 @@ export class SceneService {
               child.style.left = 50 - pos/2 + '%';
           }
       }
-  }
-
-  public getScreenPosition(obj){
-    var position = this.toScreenPosition(obj,this.camera)
-    // var header = document.querySelector('.header');
-    // var body_container = document.querySelector('.body-container');
-    this.myMove(position.x,(position.y + 84))
   }
 
   // リサイズ
@@ -551,10 +380,6 @@ export class SceneService {
       const z: number = this.helper.toNumber(camera.z);
       if (x !== null && y !== null && z !== null) {
           this.camera.position.set(x, y, z);
-          if(this.helper.dimension == 2 ) {
-            this.controls.target.x = x;
-            this.controls.target.y = y;
-          }
       }
       const zoom: number = this.helper.toNumber(camera.zoom);
       if (zoom !== null) {
@@ -576,11 +401,5 @@ export class SceneService {
     } 
 
   }
-  public open() {
-    this.gui.open();
-  }
 
-  public close() {
-    this.gui.close();
-  }
 }

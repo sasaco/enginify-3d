@@ -2,30 +2,21 @@ import { AfterViewInit, ElementRef, OnDestroy } from '@angular/core';
 import { Component, OnInit, ViewChild } from '@angular/core';
 import * as monaco from 'monaco-editor';
 
-import { DataHelperModule } from '../../../providers/data-helper.module';
-import { DocLayoutService } from 'src/app/components/doc-layout/doc-layout.service';
-import { InputSourceService } from '../../three/geometry/three-source.service';
 import { InputDataService } from 'src/app/providers/input-data.service';
 
 @Component({
   selector: 'app-input-source',
-  templateUrl: './input-source.component.html',
-  styleUrls: ['./input-source.component.scss', '../../../app.component.scss'],
+  templateUrl: './input-source.component.html'
 })
-export class InputSourceComponent implements OnInit, AfterViewInit, OnDestroy  {
+export class InputSourceComponent implements AfterViewInit, OnDestroy  {
   @ViewChild('editorContainer', { static: true }) editorContainer!: ElementRef;
   private editor!: monaco.editor.IStandaloneCodeEditor;
   
   constructor(
     private data: InputDataService,
-    public helper: DataHelperModule,
-    public docLayout: DocLayoutService,
   ) {
   }
 
-  ngOnInit() {
-  }
-  
   ngAfterViewInit() {
     // Monaco Editor のロード
     (window as any).require.config({ paths: { 'vs': 'assets/monaco-editor/min/vs' } }); // 重要：パスの設定

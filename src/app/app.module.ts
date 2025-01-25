@@ -16,39 +16,26 @@ import { MatExpansionModule } from '@angular/material/expansion';
 import { environment } from "../environments/environment";
 
 import { InputDataService } from "./providers/input-data.service";
-import { DataHelperModule } from "./providers/data-helper.module";
 import { UserInfoService } from "./providers/user-info.service";
 
 import { MenuComponent } from "./components/menu/menu.component";
-import { WaitDialogComponent } from "./components/wait-dialog/wait-dialog.component";
-import { AlertDialogComponent } from "./components/alert-dialog/alert-dialog.component";
 
-import { InputNodesComponent } from "./components/input/input-nodes/input-nodes.component";
-import { InputNodesService } from "./components/input/input-nodes/input-nodes.service";
-
-import { InputSourceComponent } from "./components/input/input-source/input-source.component";
+import { InputSourceComponent } from "./components/input-source/input-source.component";
 import { InputSourceService } from "./components/three/geometry/three-source.service";
 
 import { ThreeComponent } from "./components/three/three.component";
 import { SceneService } from "./components/three/scene.service";
 
-import { StartMenuComponent } from "./components/start-menu/start-menu.component";
-import { PresetComponent } from "./components/preset/preset.component";
-import { PresetService } from "./components/preset/preset.service";
-import { SheetComponent } from "./components/input/sheet/sheet.component";
 import { TranslateLoader, TranslateModule } from "@ngx-translate/core";
 import { TranslateHttpLoader } from "@ngx-translate/http-loader";
-import { ChatComponent } from './components/chat/chat.component';
 import { ElectronService } from "./providers/electron.service";
-import { DocLayoutComponent } from "./components/doc-layout/doc-layout.component";
 import { ToolbarComponent } from "./components/toolbar/toolbar.component";
-import { ActivateSessionComponent } from './components/activate-session/activate-session.component';
 
 import { MatIconModule } from '@angular/material/icon'
-import { AppService } from "./app.service";
 import { IPublicClientApplication, PublicClientApplication, InteractionType, BrowserCacheLocation } from '@azure/msal-browser';
 import { MsalGuard, MsalInterceptor, MsalBroadcastService, MsalInterceptorConfiguration, MsalModule, MsalService, MSAL_GUARD_CONFIG, MSAL_INSTANCE, MSAL_INTERCEPTOR_CONFIG, MsalGuardConfiguration, MsalRedirectComponent } from '@azure/msal-angular';
 import { LogLevel as LogLevelMasl } from "@azure/msal-browser";
+import { DataHelperModule } from "./providers/data-helper.module";
 
 const httpLoaderFactory = (http: HttpClient): TranslateHttpLoader =>
   new TranslateHttpLoader(http, "./assets/i18n/", ".json");
@@ -130,27 +117,14 @@ export function MSALGuardConfigFactory(): MsalGuardConfiguration {
   declarations: [
     AppComponent,
     MenuComponent,
-    WaitDialogComponent,
-    AlertDialogComponent,
-
-    InputNodesComponent,
     InputSourceComponent,
 
     ThreeComponent,
-    StartMenuComponent,
-    PresetComponent,
-    SheetComponent,
-    ChatComponent,
-    DocLayoutComponent,
     ToolbarComponent,
-    ActivateSessionComponent,
   ],
   providers: [
-    AppService,
     InputDataService,
-    InputNodesService,
     InputSourceService,
-    PresetService,
     UserInfoService,
     SceneService,
     ElectronService,

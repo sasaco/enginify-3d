@@ -1,21 +1,14 @@
-<div class="pagerArea" [ngClass]="{ leftArea: showResultComponent }">
-  <!-- 2D, 3D ボタン -->
-  <div class="btn-group-show" >
-    <div class="buttonShow" >
-          <button class="left-button" [ngClass]="{'active':helper.dimension===2}" (click)="handleShow(2)"><span translate>2D</span></button>
-          <button class="right-button" [ngClass]="{'active':helper.dimension===3}" (click)="handleShow(3)" ><span translate>3D</span></button>
-    </div>
+<div class="pagerArea">
+  <!-- 計算 ボタン -->
+  <div class="buttonShow" >
+    <button class="left-button" (click)="calcrate()">
+      <img src="assets/icons/icon-calc.svg" alt="Icon File">
+      <span translate>app.calculat</span>
+    </button>
   </div>
-
-  <div class="pagerWrap" [ngClass]="{ left: showResultComponent || showLoadComponent }">
-    
-
-
-    <!-- コントロール -->
-    <div class="gui-container"></div>
-    <div class="control" (click)="onToggleControl()" [ngClass]="{ 'control-active': isControlOpen }">
-      <img src="assets/icons/icon-three-gui.svg" alt="Icon File">
-      <span translate>menu.control</span>
-    </div>
+  <!-- コントロール -->
+  <div class="control" (click)="onToggleControl()" [ngClass]="{ 'control-active': isControlOpen }">
+    <img src="assets/icons/icon-three-gui.svg" alt="Icon File">
+    <span translate>menu.control</span>
   </div>
 </div>

@@ -1,27 +1,15 @@
 import { Component, HostListener, Inject, OnInit } from "@angular/core";
-import { NgbModal, NgbModalRef } from "@ng-bootstrap/ng-bootstrap";
 import { AppComponent } from "../../app.component";
 import { HttpClient, HttpHeaders } from "@angular/common/http";
 
-import { WaitDialogComponent } from "../wait-dialog/wait-dialog.component";
-
 import * as FileSaver from "file-saver";
 
-import { InputDataService } from "../../providers/input-data.service";
-import { ThreeService } from "../three/three.service";
-
-import { DataHelperModule } from "src/app/providers/data-helper.module";
-import { SceneService } from "../three/scene.service";
 import { UserInfoService } from "src/app/providers/user-info.service";
-import { LanguagesService } from "src/app/providers/languages.service";
 import { ElectronService } from "src/app/providers/electron.service";
-import { TranslateService } from "@ngx-translate/core";
-import packageJson from '../../../../package.json';
+import packageJson from 'package.json';
 
 import { MenuService } from "./menu.service";
-import { AppService } from "src/app/app.service";
 import { Router } from "@angular/router";
-import { PresetService } from "../preset/preset.service";
 import { MSAL_GUARD_CONFIG, MsalGuardConfiguration, MsalService, MsalBroadcastService } from "@azure/msal-angular";
 import { EventMessage, InteractionStatus, EventType, RedirectRequest, AuthenticationResult, AccountInfo, SsoSilentRequest, PopupRequest, PromptValue, IdTokenClaims } from "@azure/msal-browser";
 import { Subject } from "rxjs";
@@ -36,8 +24,7 @@ type IdTokenClaimsWithPolicyId = IdTokenClaims & {
 
 @Component({
   selector: "app-menu",
-  templateUrl: "./menu.component.html",
-  styleUrls: ["./menu.component.scss", "../../app.component.scss"],
+  templateUrl: "./menu.component.html"
 })
 export class MenuComponent implements OnInit {
   loginUserName: string;
@@ -49,35 +36,20 @@ export class MenuComponent implements OnInit {
 
   constructor(
     private router: Router,
-    private modalService: NgbModal,
     private app: AppComponent,
-    private scene: SceneService,
-    private helper: DataHelperModule,
-    private InputData: InputDataService,
     private http: HttpClient,
-    private three: ThreeService,
     public user: UserInfoService,
-    public language: LanguagesService,
     public electronService: ElectronService,
-    private translate: TranslateService,
     public menuService: MenuService,
-    public appService: AppService,
-    public presetService: PresetService,
     @Inject(MSAL_GUARD_CONFIG) private msalGuardConfig: MsalGuardConfiguration,
     private authService: MsalService,
     private msalBroadcastService: MsalBroadcastService
   ) {
-    this.menuService.fileName = "";
-    this.three.fileName = "";
     this.version = packageJson.version;
   }
 
   async ngOnInit() {
     this.menuService.fileName = "";
-    this.three.fileName = "";
-
-    this.helper.isContentsDailogShow = false;
-    this.menuService.setDimension(2);
 
     if (this.electronService.isElectron) {
       this.electronService.ipcRenderer.on(IPC_MESSAGES.GET_PROFILE, (event, listClaims) => {
@@ -90,7 +62,7 @@ export class MenuComponent implements OnInit {
         if (profile.uid) {
           this.setUserProfile(profile)
         } else {
-          this.openFile()
+          // ログインしていない場合
         }
       })
     } else {
@@ -182,7 +154,7 @@ export class MenuComponent implements OnInit {
     }
   }
 
-  getClaims(claims: Record<string, any>) {
+  private getClaims(claims: Record<string, any>) {
     const listClaims = []
     if (claims) {
       Object.entries(claims).forEach((claim: [string, unknown], index: number) => {
@@ -192,11 +164,11 @@ export class MenuComponent implements OnInit {
     return listClaims;
   }
 
-  setLoginDisplay() {
+  private setLoginDisplay() {
     this.loginDisplay = this.authService.instance.getAllAccounts().length > 0;
   }
 
-  checkAndSetActiveAccount() {
+  private checkAndSetActiveAccount() {
     let activeAccount = this.authService.instance.getActiveAccount();
 
     if (!activeAccount && this.authService.instance.getAllAccounts().length > 0) {
@@ -205,7 +177,7 @@ export class MenuComponent implements OnInit {
     }
   }
 
-  setUserProfile(profile: any) {
+  private setUserProfile(profile: any) {
     const isOpenFirst = window.sessionStorage.getItem("openStart");
     if (isOpenFirst === "1" || isOpenFirst === null) {
       this.router.navigate([{ outlets: { startOutlet: ["start"] } }]);
@@ -220,13 +192,6 @@ export class MenuComponent implements OnInit {
     this.user.setUserProfile(userProfile);
   }
 
-  @HostListener("window:beforeunload", ["$event"])
-  onBeforeUnload($event: BeforeUnloadEvent) {
-    // if (!this.electronService.isElectron) {
-    //   $event.returnValue =
-    //     "Your work will be lost. Do you want to leave this site?";
-    // }
-  }
 
   @HostListener("document:keydown", ["$event"])
   onKeyDown(event: KeyboardEvent): void {
@@ -237,80 +202,40 @@ export class MenuComponent implements OnInit {
       this.overWrite();
     }
   }
-  public newWindow() {
-    this.electronService.ipcRenderer.send("newWindow");
-  }
-  // 新規作成
-  async renew(): Promise<void> {
-    const isConfirm = await this.helper.confirm(
-      this.translate.instant("window.confirm")
-    );
-    if (isConfirm) {
-      this.app.dialogClose(); // 現在表示中の画面を閉じる
-      // this.InputData.clear();
-      // this.ResultData.clear();
-      // this.PrintData.clear();
-      // this.CustomFsecData.clear();
-      // this.three.ClearData();
-      // this.menuService.fileName = "";
-      // this.three.fileName = "";
-      // this.three.mode = "";
 
-      // // "新規作成"のとき、印刷パネルのフラグをリセットする
-      // this.printCustomFsecService.flg = undefined;
-      this.menuService.renew();
-    }
+  // 新規作成
+  public async renew(): Promise<void> {
+    this.menuService.renew();
   }
 
   // Electron でファイルを開く
-  open_electron() {
+  public open_electron() {
     const response = this.electronService.ipcRenderer.sendSync("open");
 
     if (response.status !== true) {
-      this.helper.alert(
+      alert(
         "ファイルを開くことに失敗しました, status:" + response.status
       );
       return;
     }
-    this.app.dialogClose(); // 現在表示中の画面を閉じる
-    this.appService.addHiddenFromElements();
-    this.InputData.clear();
-    this.three.ClearData();
-    // this.countArea.clear();
-    const modalRef = this.modalService.open(WaitDialogComponent);
-
+    this.menuService.renew();
     this.menuService.fileName = response.path;
-    this.three.fileName = response.path;
-    this.app.dialogClose(); // 現在表示中の画面を閉じる
-    const old = this.helper.dimension;
 
     // BOMを除去する
     const cleanText = this.removeBOM(response.text);
     const jsonData: {} = JSON.parse(cleanText);
-
-    let resultData: {} = null;
-    if ("result" in jsonData) {
-      resultData = jsonData["result"];
-      delete jsonData["result"];
-    }
-    this.InputData.loadInputData(jsonData); // データを読み込む
-    if (old !== this.helper.dimension) {
-      this.menuService.setDimension(this.helper.dimension);
-    }
-    this.three.fileload();
-    modalRef.close();
+    this.menuService.openJson(jsonData);
   }
 
   private removeBOM(text) {
     if (text.charCodeAt(0) === 0xFEFF) {
       return text.slice(1);
     }
-  return text;
+    return text;
   }
 
   // ファイルを開く
   open(evt) {
-    this.appService.dialogClose(); // 現在表示中の画面を閉じる
     this.menuService.open(evt);
   }
 
@@ -321,7 +246,7 @@ export class MenuComponent implements OnInit {
       this.save();
       return;
     }
-    const inputJson: string = JSON.stringify(this.InputData.getInputJson());
+    const inputJson: string = this.menuService.getInputJson();
     this.menuService.fileName = this.electronService.ipcRenderer.sendSync(
       "overWrite",
       this.menuService.fileName,
@@ -331,13 +256,9 @@ export class MenuComponent implements OnInit {
 
   // ファイルを保存
   save(): void {
-    const inputJson: string = JSON.stringify(this.InputData.getInputJson());
+    const inputJson: string = this.menuService.getInputJson();
     if (this.menuService.fileName.length === 0) {
       this.menuService.fileName = "EnginifyforJS.json";
-      this.three.fileName = "EnginifyforJS.json";
-    }
-    if (this.helper.getExt(this.menuService.fileName) !== "json") {
-      this.menuService.fileName += ".json";
     }
     // 保存する
     if (this.electronService.isElectron) {
@@ -353,10 +274,6 @@ export class MenuComponent implements OnInit {
     }
   }
 
-  // ピックアップファイル出力
-  public pickup(): void {
-
-  }
 
   // ログイン関係
   async login(userFlowRequest?: RedirectRequest | PopupRequest, ignoreAlert?: boolean) {
@@ -365,16 +282,7 @@ export class MenuComponent implements OnInit {
     } else {
 
       //If you ignore the alert, it is considered as confirmation to leave the page.
-      let isConfirm = false;
-      if(ignoreAlert) isConfirm = true;
-      else
-      {
-        isConfirm = await this.helper.confirm(
-          this.translate.instant("menu.leave"),  this.translate.instant("window.leaveTitle"),
-        );
-      }
-
-      if (!this.loginDisplay && isConfirm) {
+      if (!this.loginDisplay) {
         this.msalBroadcastService.inProgress$
         .pipe(
           filter(
@@ -398,119 +306,32 @@ export class MenuComponent implements OnInit {
       this.user.setUserProfile(null);
       window.sessionStorage.setItem("openStart", "1");
     } else {
-      const isConfirm = await this.helper.confirm(
-        this.translate.instant("menu.leave"),  this.translate.instant("window.leaveTitle"),
-      );
-      if(isConfirm){
-        this.authService.instance
-        .handleRedirectPromise()
-        .then((tokenResponse) => {
-          if (!tokenResponse) {
-            this.user.setUserProfile(null);
-            this.authService.logoutRedirect();
-            window.sessionStorage.setItem("openStart", "1");
-          } else {
-            // Do something with the tokenResponse
-          }
-        })
-        .catch((err) => {
-          // Handle error
-          console.error(err);
-        });
-      }
-    }
-  }
-
-  logOut(): void {
-    if (this.electronService.isElectron) {
-      this.user.setUserProfile(null);
-      window.sessionStorage.setItem("openStart", "1");
-    } else {
-      this.user.setUserProfile(null);
-      window.sessionStorage.setItem("openStart", "1");
-    }
-  }
-
-  //　印刷フロート画面用
-  public dialogClose(): void {
-    this.helper.isContentsDailogShow = false;
-  }
-
-  public preset(): void {
-    this.helper.isContentsDailogShow = true;
-  }
-
-  public contentsDailogShow(id): void {
-    this.deactiveButtons();
-    document.getElementById(id).classList.add("active");
-    this.helper.isContentsDailogShow = true;
-  }
-
-  // アクティブになっているボタンを全て非アクティブにする
-  deactiveButtons() {
-    for (let i = 0; i <= 13; i++) {
-      const data = document.getElementById(i + "");
-      if (data != null) {
-        if (data.classList.contains("active")) {
-          data.classList.remove("active");
+      this.authService.instance
+      .handleRedirectPromise()
+      .then((tokenResponse) => {
+        if (!tokenResponse) {
+          this.user.setUserProfile(null);
+          this.authService.logoutRedirect();
+          window.sessionStorage.setItem("openStart", "1");
+        } else {
+          // Do something with the tokenResponse
         }
-      }
+      })
+      .catch((err) => {
+        // Handle error
+        console.error(err);
+      });
     }
   }
 
-  // テスト ---------------------------------------------
-  private saveResult(text: string): void {
-    const blob = new window.Blob([text], { type: "text/plain" });
-    FileSaver.saveAs(blob, "frameWebResult.json");
-  }
 
-
+  // ヘルプ
   public goToLink() {
     window.open("https://help-frameweb.malme.app/", "_blank");
   }
 
-  openFile() {
-    this.helper.isContentsDailogShow = false;
-    this.appService.addHiddenFromElements();
-    this.InputData.clear();
-    this.three.ClearData();
-    // this.countArea.clear();
-    const modalRef = this.modalService.open(WaitDialogComponent);
-    this.http.get('./assets/preset/サンプル（門型橋脚）.json', { responseType: 'text' }).subscribe(text => {
-      this.menuService.fileName = 'サンプル（門型橋脚）.json';
-      this.three.fileName = 'サンプル（門型橋脚）.json';
-      const old = this.helper.dimension;
-      const jsonData: {} = JSON.parse(text);
-      let resultData: {} = null;
-      if ("result" in jsonData) {
-        resultData = jsonData["result"];
-        delete jsonData["result"];
-      }
-      this.InputData.loadInputData(jsonData); // データを読み込む
-      if (old !== this.helper.dimension) {
-        this.setDimension(this.helper.dimension);
-      }
-      this.three.fileload();
-      modalRef.close();
-    });
-  }
-
-  public setDimension(dim: number = null) {
-    this.scene.changeGui(this.helper.dimension);
-    if (dim === null) {
-      if (this.helper.dimension === 2) {
-        this.helper.dimension = 3;
-      } else {
-        this.helper.dimension = 2;
-      }
-    } else {
-      this.helper.dimension = dim;
-    }
-    this.app.dialogClose(); // 現在表示中の画面を閉じる
-    this.scene.changeGui(this.helper.dimension);
-  }
-
-  handelClickChat() {
+  // チャットs
+  public handelClickChat() {
     const elementChat = document.getElementById("chatplusheader");
     console.log("elementChat", elementChat)
     elementChat.click()

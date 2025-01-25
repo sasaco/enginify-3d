@@ -1,21 +1,7 @@
-<!-- <a class="camera" (click)="downloadImage()"><i class="fas fa-camera"></i></a> -->
-<div #screen id="screen">
-    <div id="screenArea">
-        <canvas #myCanvas id="myCanvas" style="overflow: hidden; position: absolute">
-        </canvas>
-        <div id="graphics-locator" style="left: 396px; top: 456.106px; ">
-            <div id="graphics-locator-child" style="width: 60%; height: 60%; top: 20%; left: 20%;"></div>
-        </div>
+<div class="z-1">
+    <canvas #myCanvas id="myCanvas" style="overflow: hidden; position: absolute">
+    </canvas>
+    <div id="graphics-locator" style="left: 396px; top: 456.106px; ">
+        <div id="graphics-locator-child" style="width: 60%; height: 60%; top: 20%; left: 20%;"></div>
     </div>
-</div>
-
-<!-- スクリーンショット -->
-<div id="download">
-    <img #img />
-    <a #downloadLink></a>
-</div>
-
-<!-- 視点を戻すボタン -->
-<div class="home-button" (click)="onToggleHome()">
-    <img src="assets/icons/icon-home.svg" alt="Icon File">
 </div>

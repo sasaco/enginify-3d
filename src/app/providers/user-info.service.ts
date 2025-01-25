@@ -4,9 +4,11 @@ import { nanoid } from 'nanoid';
 import axios from 'axios';
 import { MsalService } from '@azure/msal-angular';
 import { HttpClient } from '@angular/common/http';
-import { environment } from 'src/environments/environment';
 
-const APP = 'FrameWeb';
+import { environment } from 'src/environments/environment';
+import packageJson from 'package.json';
+
+const APP = packageJson.name;
 const USER_PROFILE = 'userProfile';
 const CLIENT_ID = 'clientId';
 
@@ -81,7 +83,7 @@ export class UserInfoService {
 
   setActiveSession() {
     if (this.userProfile) {
-      axios.post('https://asia-northeast1-strcutural-engine.cloudfunctions.net/manage-session/', {
+      axios.post(environment.SessionURL, {
         uid: this.userProfile.uid,
         app: APP,
         session_id: this.clientId,
