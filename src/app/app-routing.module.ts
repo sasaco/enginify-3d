@@ -1,17 +1,9 @@
-import { NgModule } from '@angular/core';
-import { Routes, RouterModule } from '@angular/router';
+import { Routes } from '@angular/router';
+import { MonacoComponent } from './components/monaco/monaco.component';
+import { LayoutComponent } from './components/layout/layout.component';
 
-import { InputSourceComponent } from './components/input-source/input-source.component';
-
-
-const routes: Routes = [
-  { path: 'input-source', component: InputSourceComponent },
+export const routes: Routes = [
+    { path: '', redirectTo: '/design', pathMatch: 'full' },
+    { path: 'design', component: LayoutComponent },
+    { path: 'code', component: MonacoComponent }
 ];
-
-@NgModule({
-  //@ts-ignore
-  imports: [RouterModule.forRoot(routes, {})],
-  // imports: [RouterModule.forRoot(routes, { })],
-  exports: [RouterModule]
-})
-export class AppRoutingModule { }

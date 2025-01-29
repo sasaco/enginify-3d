@@ -1,24 +1,18 @@
-import { Injectable } from "@angular/core";
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { ElectronService } from './electron.service';
 
 @Injectable({
-  providedIn: "root",
+  providedIn: 'root'
 })
 export class InputDataService {
 
-  private InputJson: {};
-
-  constructor() { }
-
-  public getInputJson(): any {
-    return this.InputJson;
-  }
-  public loadInputData(jsonData: {}) {
-    this.InputJson = jsonData;
-  }
-
-  public clear() {
-    this.InputJson = {};
-  }
+  // three を格納しているdevの状態
+  public range: number = 100;
+  public boxWidth: number = 300; // 初期幅 (px)
+  public boxHeight: number = 300; // 初期高さ (px)
+  public boxTop: number = 0; // 初期位置 (px)
+  public boxLeft: number = 0; // 初期位置 (px)
 
   // 初期値
   public code = `

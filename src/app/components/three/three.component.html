@@ -1,7 +1,5 @@
-<div class="z-1">
-    <canvas #myCanvas id="myCanvas" style="overflow: hidden; position: absolute">
-    </canvas>
-    <div id="graphics-locator" style="left: 396px; top: 456.106px; ">
-        <div id="graphics-locator-child" style="width: 60%; height: 60%; top: 20%; left: 20%;"></div>
-    </div>
+<div #screen id="screen" 
+  (mousedown)="onMouseDown($event)"
+  class="h-full w-full">
 </div>
+

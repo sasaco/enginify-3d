@@ -3,31 +3,13 @@
   "compilerOptions": {
     "baseUrl": "./",
     "outDir": "./dist",
-    "sourceMap": true,
-    "declaration": false,
-    "downlevelIteration": true,
-    "experimentalDecorators": true,
-    "esModuleInterop": true,
-    "resolveJsonModule": true,
-    "allowSyntheticDefaultImports": true,
-    "module": "es2020",
-    "moduleResolution": "node",
-    "importHelpers": true,
+    "strict": true,   // 厳格な型チェックを有効にする設定です。
+    "esModuleInterop": true, // require を使わずに import 文を使ってモジュールをインポートすることができます。
+    "sourceMap": true, // ソースマップは、コンパイルされた JavaScript コードと元の TypeScript コードを関連付けるためのファイルです
+    "declaration": false, // TypeScript のコンパイラオプションの一つで、型定義ファイル（.d.ts ファイル）の生成を無効にする設定です。
+    "moduleResolution": "node", // 、TypeScript がインポートされたモジュールをどのように見つけるかを決定します。node:node_modules ディレクトリを検索
     "target": "ES2022",
-    "typeRoots": [
-      "node_modules/@types"
-    ],
-    "lib": [
-      "es2018",
-      "dom"
-    ],
-    "useDefineForClassFields": false
-  },
-  "angularCompilerOptions": {
-    "enableI18nLegacyMessageIdFormat": false,
-    "strictInjectionParameters": true,
-    "strictInputAccessModifiers": true,
-    "strictTemplates": true,
-    "fullTemplateTypeCheck": true,
+    "module": "ES2022",
+    "resolveJsonModule": true, // JSON ファイルをモジュールとしてインポートできるようにする設定です。
   }
 }
