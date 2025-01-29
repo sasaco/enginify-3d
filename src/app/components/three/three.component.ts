@@ -15,15 +15,22 @@ export class ThreeComponent implements AfterViewInit {
   @ViewChild("screen", { static: true }) private screen: ElementRef | undefined;
 
   private isDragging = false;
+  public isLoading = true;
 
   constructor(
     private scene: SceneService,
     private code: CodeService) { }
 
-  ngAfterViewInit() {
+  async ngAfterViewInit() {
     if (this.screen) {
         this.scene.OnInit(this.screen.nativeElement as HTMLCanvasElement);
-        this.code.runCode();
+        try {
+          await this.code.runCode();
+        } catch (err) {
+          console.error('Failed to run code:', err);
+        } finally {
+          this.isLoading = false;
+        }
       }
   }
 
