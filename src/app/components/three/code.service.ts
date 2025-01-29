@@ -15,20 +15,24 @@ import { SceneService } from './scene.service';
 export class CodeService {
 
   private ifcAPI = new IfcAPI();
+  private initPromise: Promise<void>;
 
   constructor(
     private input: InputDataService,
     private scene: SceneService) {
       // Initialize web-ifc
       this.ifcAPI.SetWasmPath('/assets/web-ifc/bin/');
-      this.ifcAPI.Init().then(() => {
+      this.initPromise = this.ifcAPI.Init().then(() => {
         console.log('web-ifc Initialization complete');
       }).catch((err) => {
         console.error('web-ifc Initialization failed:', err);
+        throw err;
       });
     }
 
   public async runCode() {
+    // Wait for initialization to complete before proceeding
+    await this.initPromise;
     const model = this.ifcAPI.CreateModel({ schema: Schemas.IFC4 });
 
     const compiled = ts.transpileModule(this.input.code, { compilerOptions: { module: ts.ModuleKind.CommonJS } })
