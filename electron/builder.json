@@ -1,58 +1,29 @@
 {
-  "productName": "enginify-3d-for-js",
+  "productName": "Enginify3D",
   "directories": {
     "output": "release/"
   },
   "files": [
-    "**/*",
-    "!**/*.ts",
-    "!*.code-workspace",
-    "!LICENSE.md",
-    "!package.json",
-    "!package-lock.json",
-    "!src/",
-    "!e2e/",
-    "!hooks/",
-    "!angular.json",
-    "!_config.yml",
-    "!karma.conf.js",
-    "!tsconfig.json",
-    "!tslint.json"
-  ],
-  "extraResources": [
-    {
-      "from": "dist",
-      "to": "app",
-      "filter": [
-        "**/*"
-      ]
-    }
+    "dist/browser/",
+    "electron/main/"
   ],
   "win": {
-    "icon": "dist/assets/icons",
-    "publisherName": "MALME INC.",
-    "target": "nsis",
-    "asar": false,
-    "verifyUpdateCodeSignature": false 
+    "icon": "src/assets/icons/favicon.ico",
+    "target": [
+      "nsis"
+    ],
+    "asar": false
   },
   "mac": {
-    "icon": "dist",
+    "icon": "src/assets/icons/favicon.ico",
     "target": [
       "dmg"
     ]
   },
   "linux": {
-    "icon": "dist",
+    "icon": "src/assets/icons/favicon.ico",
     "target": [
       "AppImage"
     ]
-  },
-  "publish": [
-    {
-      "releaseType": "release",
-      "provider": "github",
-      "owner": "structuralengine",
-      "repo": "EnginifyforJS"
-    }
-  ]
+  }
 }

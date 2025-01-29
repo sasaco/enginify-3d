@@ -1,129 +1,81 @@
-<div class="title-and-menu" id="disTitle">
-    <div class="icon-area">
-        <ul>
-            <li>
-                <!-- アイコン -->
-                <img class="w-[26px] h-[26px]" src="assets/icons/icon-64.png" />
-            </li>
-            <li>
-                <div ngbDropdown class="dropdownmenu">
-                    <a class="icon file" id="dropdownBasic1" ngbDropdownToggle onfocus="this.blur();">
-                        <img src="assets/icons/icon-file.svg" alt="Icon File">
-                        <div translate class="menu-item">menu.file</div>
-                    </a>
-                    <div ngbDropdownMenu aria-labelledby="dropdownBasic1">
-                        <!-- 新規作成 -->
-                        <button ngbDropdownItem (click)="renew()" translate>menu.newEntry</button>
-
-                        <!-- ファイルを開く(ブラウザ) -->
-                        <ng-container *ngIf="!electronService.isElectron">
-                            <label style="width: 100%; margin: 0px">
-                                <span ngbDropdownItem style="padding: 8px" translate>menu.openFile
-                                    <input type="file" accept="application/json" (change)="open($event)"
-                                        style="display: none" />
-                                </span>
-                            </label>
-                        </ng-container>
-
-                        <!-- ファイルを開く(Electron) -->
-                        <button *ngIf="electronService.isElectron" ngbDropdownItem (click)="open_electron()"
-                            translate>
-                            menu.openFile
-                        </button>
-
-                        <!-- ファイルを保存 -->
-                        <button class="save-file" [class.active-save]="user.userProfile" ngbDropdownItem (click)="save()"translate>menu.saveFile</button>
-
-                        <a [routerLink]="[{ outlets: { presetOutlet: ['preset'] } }]" routerLinkActive="selected-item" ngbDropdownItem (click)="preset()" translate>menu.select_preset</a>
-                        <!--  -->
-                        <button class="save-file" [class.active-save]="user.userProfile" *ngIf="electronService.isElectron" ngbDropdownItem (click)="overWrite()"
-                            translate>menu.overwrite</button>
-                    </div>
-                </div>
-            </li>
-          
-            <!-- 印刷 -->
-            <li>
-                <a [routerLink]="[{ outlets: { printOutlet: ['print'] } }]" (click)="contentsDailogShow(13)" routerLinkActive="selected-item" id="13">
-                    <img src="assets/icons/icon-print.svg" alt="Icon File">
-                    <div translate class="menu-item">menu.print</div>
-                </a>
-            </li>
-
-        </ul>
-    </div>
-
-    <div class="title" *ngIf="menuService.fileName ===  '';then init; else file">
-    </div>
-    <ng-template #init>
-        <h1 class="title-filename">{{'menu.softName'| translate }} ver.{{version}}</h1>
-    </ng-template>
-    <ng-template #file>
-        <div class="file-layout">
-            <h1 class="title-filename">
-                <img src="assets/icons/icon-file.svg" alt="Icon File">
-                {{menuService.shortenFilename(menuService.fileName)}}</h1>
-          </div>
-    </ng-template>
-
-    
-    <div class="rightArea">
-        <div class="icon-area">
-        <ul>
-            <!-- 言語 -->
-            <li>
-                <div class="language-area">
-                    <div ngbDropdown>
-                        <a class="icon file" id="dropdownBasic1" ngbDropdownToggle onfocus="this.blur();">
-                        <img src="assets/icons/icon-language.svg" alt="Icon File">
-                        <a class="btn btn-outline-primary" id="language1" 
-                            class="menu-btn lang menu-item" translate>menu.language</a>
-                        <div ngbDropdownMenu aria-labelledby="language1">
-                            <ng-container *ngFor="let index of language.languageIndex | keyvalue">
-                                <a ngbDropdownItem (click)="language.trans(index.key)" class="menu-btn">{{index.value}}</a>
-                            </ng-container>
-                        </div>
-                        </a>
-                    </div>
-                </div>     
-            </li>
-
-            <!-- help -->
-            <li>
-                <a (click)="goToLink()">
-                    <img src="assets/icons/icon-help.svg" alt="Icon File">
-                    <div translate class="menu-item">menu.help</div>
-                </a>
-            </li>
-
-            <!-- chat -->
-            <li>
-                <a (click)="handelClickChat()">
-                    <img src="assets/icons/icon-chat.svg" alt="Icon File">
-                    <div translate class="menu-item">menu.contact</div>
-                </a>
-            </li>
-        </ul>
-       </div>
-
-       <!-- login -->
-        <div class="login-area">
-            <div *ngIf="user.userProfile as user; else showLogin" class="userInfo">
-                <div ngbDropdown>
-                    <a class="icon file" id="dropdownBasic1" class="menu-btn menu-item" ngbDropdownToggle
-                        onfocus="this.blur();"><i class="far fa-user-circle"></i>{{ user.lastName + user.firstName }}</a>
-                    <div ngbDropdownMenu aria-labelledby="dropdownBasic1">
-                        <a (click)="logout()" class="menu-btn logOut menu-item dropdown-item" translate>menu.logout</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <ng-template #showLogin>
-            <a (click)="login()" class="menu-btn">
-                <i class="fas fa-sign-in-alt"></i>
-                <p translate class="menu-item dropdown-item">menu.login</p>
+<nav class="bg-white border-gray-200 dark:bg-gray-900  h-8">
+    <div class="flex flex-wrap items-center justify-between max-w-screen-xl mx-auto p-0">
+        <a href="{{homepage}}" class="flex items-center space-x-3 rtl:space-x-reverse">
+            <img src="assets/icons/logo.svg" class="h-6 ml-3" alt="Logo" />
+            <span
+                class="self-center text-sm font-semibold whitespace-nowrap dark:text-white">{{softName}}</span>
+        </a>
+        <div class="flex text-xs items-center md:order-2 space-x-1 md:space-x-2 rtl:space-x-reverse">
+            <a href="#"
+                class="text-gray-800 dark:text-white hover:bg-gray-50 focus:ring-4 focus:ring-gray-300 font-medium rounded-lg px-4 py-2 md:px-5 md:py-2.5 dark:hover:bg-gray-700 focus:outline-none dark:focus:ring-gray-800">
+                Login
             </a>
-        </ng-template>
+            <a href="#"
+                class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg px-4 py-2 md:px-5 md:py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">
+                Sign up
+            </a>
+            <button data-collapse-toggle="mega-menu" type="button"
+                class="inline-flex items-center p-2 w-10 h-10 justify-center text-xs text-gray-500 rounded-lg md:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600"
+                aria-controls="mega-menu" aria-expanded="false">
+                <span class="sr-only">Open main menu</span>
+                <img src="assets/icons/line3.svg" class="w-5 h-5" aria-hidden="true" alt="line3" />
+            </button>
+        </div>
+        <div id="mega-menu" class="items-center justify-between hidden w-full md:flex md:w-auto md:order-1">
+            <ul class="flex flex-col mt-4 text-xs font-medium md:flex-row md:mt-0 md:space-x-8 rtl:space-x-reverse">
+                <li>
+                    <button id="mega-menu-dropdown-button" data-dropdown-toggle="mega-menu-dropdown"
+                        class="flex items-center justify-between w-full py-2 px-3 font-medium text-gray-900 border-b border-gray-100 md:w-auto hover:bg-gray-50 md:hover:bg-transparent md:border-0 md:hover:text-blue-600 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-blue-500 md:dark:hover:bg-transparent dark:border-gray-700">
+                        ファイル
+                        <img src="assets/icons/allow.svg" class="w-2.5 h-2.5 ms-3" aria-hidden="true" alt="allow" />
+                    </button>
+                    <div id="mega-menu-dropdown"
+                        class="absolute z-10 grid hidden w-auto bg-white border border-gray-100 rounded-lg shadow-md dark:border-gray-700 dark:bg-gray-700">
+                        <div class="p-4 pb-0 text-gray-900 md:pb-4 dark:text-white">
+                            <ul class="space-y-2" aria-labelledby="mega-menu-dropdown-button">
+                                <li>
+                                    <a href="#"
+                                        class="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-500">
+                                        新規作成
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#"
+                                        class="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-500">
+                                        ファイルを開
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#"
+                                        class="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-500">
+                                        ファイルを保存
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <a href="#"
+                        class="block py-2 px-3 text-blue-600 border-b border-gray-100 hover:bg-gray-50 md:hover:bg-transparent md:border-0 md:hover:text-blue-600 md:p-0 dark:text-blue-500 md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-blue-500 md:dark:hover:bg-transparent dark:border-gray-700"
+                        aria-current="page" (click)="runCode()">
+                        実行
+                    </a>
+                </li>
+                <li>
+                    <a href="#"
+                        class="block py-2 px-3 text-gray-900 border-b border-gray-100 hover:bg-gray-50 md:hover:bg-transparent md:border-0 md:hover:text-blue-600 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-blue-500 md:dark:hover:bg-transparent dark:border-gray-700">
+                        操作マニュアル
+                    </a>
+                </li>
+                <li>
+                    <a [routerLink]="routerLink"
+                        (click)="routerChange()"
+                        class="block py-2 px-3 text-gray-900 border-b border-gray-100 hover:bg-gray-50 md:hover:bg-transparent md:border-0 md:hover:text-blue-600 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-blue-500 md:dark:hover:bg-transparent dark:border-gray-700">
+                        {{routerPageName}}                        
+                    </a>
+                </li>
+            </ul>
+        </div>
     </div>
-</div>
-
+</nav>
