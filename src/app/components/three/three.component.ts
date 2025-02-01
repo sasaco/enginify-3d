@@ -4,6 +4,7 @@ import { Router, NavigationEnd } from '@angular/router';
 import { SelectBoxComponent } from '../select-box/select-box.component';
 import { SceneService } from './scene.service';
 import { CodeService } from './code.service';
+import { BoxVisibilityService } from '../box-visibility.service';
 
 @Component({
   selector: 'app-three',
@@ -20,29 +21,48 @@ export class ThreeComponent implements OnInit, AfterViewInit {
 
   constructor(
     private scene: SceneService,
-    private code: CodeService) { }
+    private code: CodeService,
+    private boxVisibility: BoxVisibilityService) { }
 
   ngOnInit(): void {
-    this.box_visible(false);
+    this.boxVisibility.setVisibility(false);
   }
 
   ngAfterViewInit() {
     if (this.screen) {
-        if(this.scene.OnInit(this.screen.nativeElement as HTMLCanvasElement))
-          this.code.runCode();
+      if(this.scene.OnInit(this.screen.nativeElement as HTMLCanvasElement)) {
+        this.code.runCode();
       }
+    }
+    this.updateBoxStyle();
+  }
+
+  private updateBoxStyle() {
+    if (!this.box) return;
+    const boxElement = this.box.nativeElement as HTMLElement;
+    if (this.boxVisibility.visible) {
+      boxElement.style.visibility = 'visible';
+      if (this.boxVisibility.positionX != null && this.boxVisibility.positionY != null) {
+        boxElement.style.top = `${this.boxVisibility.positionY}px`;
+        boxElement.style.left = `${this.boxVisibility.positionX}px`;
+      }
+    } else {
+      boxElement.style.visibility = 'hidden';
+    }
   }
 
   // マウスクリック時のイベント
   public onDoubleClick(event: MouseEvent) {
-    this.box_visible(true, event.offsetX, event.offsetY);
+    this.boxVisibility.setVisibility(true, event.offsetX, event.offsetY);
+    this.updateBoxStyle();
   }
 
   // @HostListener("pointerdown", ["$event"])
   public onMouseDown(event: MouseEvent) {
     this.scene.onPointerDown(event);
     this.isDragging = true;
-    this.box_visible(false);
+    this.boxVisibility.setVisibility(false);
+    this.updateBoxStyle();
   }
 
   // マウスクリック時のイベント
@@ -65,18 +85,6 @@ export class ThreeComponent implements OnInit, AfterViewInit {
     this.scene.onWindowResize();
   }
 
-  public box_visible(visible: boolean, x?: number, y?: number) {
-    if (!this.box) return;
-    const box_element = this.box.nativeElement as HTMLElement;
-    const box_style = box_element.style;
-    if(visible) {
-      box_style.visibility = "visible";
-      box_style.top = y + "px";
-      box_style.left = x + "px";
-    } else {
-      box_style.visibility = "hidden";
-    }
 
-  }
 
 }

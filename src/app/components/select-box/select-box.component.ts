@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
-
+import { BoxVisibilityService } from '../box-visibility.service';
 import * as webifc from 'web-ifc';
 
 
@@ -14,7 +14,7 @@ export class SelectBoxComponent {
 
   public table_item: { id: string; name: string; }[];
 
-  constructor() { 
+  constructor(private boxVisibility: BoxVisibilityService) { 
     /* webifcのすべてオブジェクトを確認
     Object.keys(webifc).forEach(key => {
       console.log(key);
@@ -59,8 +59,9 @@ export class SelectBoxComponent {
     
   }
 
-  public selectItem(item: { id: number; name: string; }): void {
+  public selectItem(item: { id: string; name: string; }): void {
     console.log(item);
+    this.boxVisibility.setVisibility(false);
   }
 
 }
