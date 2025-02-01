@@ -29,7 +29,7 @@
               {
                 "glob": "**/*",
                 "input": "node_modules/web-ifc",
-                "output": "/assets/web-ifc/bin"
+                "output": "assets/web-ifc/bin"
               },
               {
                 "glob": "**/*",
