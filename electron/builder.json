@@ -8,20 +8,20 @@
     "electron/main/"
   ],
   "win": {
-    "icon": "src/assets/icons/favicon.ico",
+    "icon": "public/icons/favicon.ico",
     "target": [
       "nsis"
     ],
     "asar": false
   },
   "mac": {
-    "icon": "src/assets/icons/favicon.ico",
+    "icon": "public/icons/favicon.ico",
     "target": [
       "dmg"
     ]
   },
   "linux": {
-    "icon": "src/assets/icons/favicon.ico",
+    "icon": "public/icons/favicon.ico",
     "target": [
       "AppImage"
     ]

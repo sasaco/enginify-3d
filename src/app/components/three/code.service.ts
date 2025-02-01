@@ -22,7 +22,7 @@ export class CodeService {
     private input: InputDataService,
     private scene: SceneService) {
       // Initialize web-ifc
-      this.ifcAPI.SetWasmPath('/assets/web-ifc/bin/');
+      this.ifcAPI.SetWasmPath('./assets/web-ifc/bin/');
       this.initPromise = this.ifcAPI.Init().then(() => {
         console.log('web-ifc Initialization complete');
         this.isInitialized = true;
