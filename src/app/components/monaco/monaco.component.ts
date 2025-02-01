@@ -31,11 +31,11 @@ export class MonacoComponent implements OnInit, OnDestroy {
     });
     // extra libraries
     const libFiles = [
-      'assets/web-ifc/bin/ifc-schema.d.ts',
-      'assets/web-ifc/bin/web-ifc-api.d.ts',
-      'assets/web-ifc/bin/web-ifc-api-node.d.ts',
-      'assets/web-ifc/bin/helpers/log.d.ts',
-      'assets/web-ifc/bin/helpers/properties.d.ts',
+      './assets/web-ifc/bin/ifc-schema.d.ts',
+      './assets/web-ifc/bin/web-ifc-api.d.ts',
+      './assets/web-ifc/bin/web-ifc-api-node.d.ts',
+      './assets/web-ifc/bin/helpers/log.d.ts',
+      './assets/web-ifc/bin/helpers/properties.d.ts',
     ];
     libFiles.forEach(file => {
       this.http.get(file, { responseType: 'text' }).subscribe(content => {
