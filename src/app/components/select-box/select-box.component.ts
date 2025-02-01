@@ -1,9 +1,10 @@
+import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 
 @Component({
   selector: 'app-select-box',
   standalone: true,
-  imports: [],
+  imports: [CommonModule],
   templateUrl: './select-box.component.html'
 })
 export class SelectBoxComponent {
