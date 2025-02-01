@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 
 import * as webifc from 'web-ifc';
+import { SceneService } from '../three/scene.service';
 
 
 @Component({
@@ -14,7 +15,8 @@ export class SelectBoxComponent {
 
   public table_item: { id: string; name: string; }[];
 
-  constructor() { 
+  constructor(private scene: SceneService) {
+
     /* webifcのすべてオブジェクトを確認
     Object.keys(webifc).forEach(key => {
       console.log(key);
@@ -59,7 +61,15 @@ export class SelectBoxComponent {
     
   }
 
-  public selectItem(item: { id: number; name: string; }): void {
+  public selectItem(item: { id: string; name: string; }): void {
+
+    if(item.id === "view port") {
+      console.log("ビューポート");
+      
+      this.scene.add();
+      return;
+    }
+
     console.log(item);
   }
 
