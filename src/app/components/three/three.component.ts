@@ -37,14 +37,14 @@ export class ThreeComponent implements OnInit, AfterViewInit {
     this.updateBoxStyle();
   }
 
-  private updateBoxStyle() {
+  private updateBoxStyle(visible: boolean, x?: number, y?: number) {
     if (!this.box) return;
     const boxElement = this.box.nativeElement as HTMLElement;
-    if (this.boxVisibility.visible) {
+    if (visible) {
       boxElement.style.visibility = 'visible';
-      if (this.boxVisibility.positionX != null && this.boxVisibility.positionY != null) {
-        boxElement.style.top = `${this.boxVisibility.positionY}px`;
-        boxElement.style.left = `${this.boxVisibility.positionX}px`;
+      if (x != null && y != null) {
+        boxElement.style.top = `${y}px`;
+        boxElement.style.left = `${x}px`;
       }
     } else {
       boxElement.style.visibility = 'hidden';
@@ -54,7 +54,6 @@ export class ThreeComponent implements OnInit, AfterViewInit {
   // マウスクリック時のイベント
   public onDoubleClick(event: MouseEvent) {
     this.boxVisibility.setVisibility(true, event.offsetX, event.offsetY);
-    this.updateBoxStyle();
   }
 
   // @HostListener("pointerdown", ["$event"])
@@ -62,7 +61,6 @@ export class ThreeComponent implements OnInit, AfterViewInit {
     this.scene.onPointerDown(event);
     this.isDragging = true;
     this.boxVisibility.setVisibility(false);
-    this.updateBoxStyle();
   }
 
   // マウスクリック時のイベント
@@ -85,6 +83,9 @@ export class ThreeComponent implements OnInit, AfterViewInit {
     this.scene.onWindowResize();
   }
 
-
-
+  ngOnDestroy(): void {
+    if (this.boxStateSubscription) {
+      this.boxStateSubscription.unsubscribe();
+    }
+  }
 }
