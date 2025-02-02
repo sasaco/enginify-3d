@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, EventEmitter, Output } from '@angular/core';
 
 import * as webifc from 'web-ifc';
 import { SceneService } from '../three/scene.service';
+import * as THREE from "three";
 
 
 @Component({
@@ -12,7 +13,8 @@ import { SceneService } from '../three/scene.service';
   templateUrl: './select-box.component.html'
 })
 export class SelectBoxComponent {
-
+  @Output() itemSelected = new EventEmitter<void>();
+  
   public table_item: { id: string; name: string; }[];
 
   constructor(private scene: SceneService) {
@@ -65,12 +67,14 @@ export class SelectBoxComponent {
 
     if(item.id === "view port") {
       console.log("ビューポート");
-      
-      this.scene.add();
-      return;
+      const geometry = new THREE.BoxGeometry( 1, 1, 1 );
+      const edges = new THREE.EdgesGeometry( geometry );
+      const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
+      const edgeLines = new THREE.LineSegments( edges, lineMaterial );
+      this.scene.add( edgeLines );
     }
 
-    console.log(item);
+    this.itemSelected.emit(); // 親のthree.componentへitemSelectedイベントを発火
   }
 
 }
