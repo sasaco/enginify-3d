@@ -4,8 +4,7 @@ import { Router, NavigationEnd } from '@angular/router';
 import { SelectBoxComponent } from '../select-box/select-box.component';
 import { SceneService } from './scene.service';
 import { CodeService } from './code.service';
-// import * as OpenJSCAD from '@jscad/modeling';
-import * as OpenJSCAD from '@jscad/web';
+import jscadWeb from '@jscad/web';
 
 @Component({
   selector: 'app-three',
@@ -37,8 +36,8 @@ export class ThreeComponent implements OnInit, AfterViewInit {
 
       const container = this.screen.nativeElement;
     
-      // OpenJSCAD の呼び出し
-      OpenJSCAD.createRoot(container, { name: 'angularJscadInstance', logging: true })
+      // jscadWeb の呼び出し
+      jscadWeb(container, { name: 'angularJscadInstance', logging: true })
         .then((updateParams: (params: unknown) => void) => {
           this.updateParamsCallback = updateParams;
           console.log('JSCAD インスタンスが初期化されました。');

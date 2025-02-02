@@ -1,14 +1,16 @@
 /// <reference types="node" />
 declare module '@jscad/web' {
-  export interface JscadOptions {
+  interface JscadOptions {
     name?: string;
     logging?: boolean;
   }
 
-  export type UpdateParamsCallback = (params: unknown) => void;
+  type UpdateParamsCallback = (params: unknown) => void;
 
-  export function createRoot(
+  function jscadWeb(
     container: HTMLElement,
     options?: JscadOptions
   ): Promise<UpdateParamsCallback>;
+
+  export default jscadWeb;
 }
