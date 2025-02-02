@@ -4,6 +4,11 @@ import { Router, NavigationEnd } from '@angular/router';
 import { SelectBoxComponent } from '../select-box/select-box.component';
 import { SceneService } from './scene.service';
 import { CodeService } from './code.service';
+// import * as OpenJSCAD from '@jscad/modeling';
+// import * as OpenJSCAD from '@jscad/web';
+// const { createRoot } = require('@jscad/web')
+// import { createRoot } from '@jscad/web';
+import makeJscad from '@jscad/web';
 
 @Component({
   selector: 'app-three',
@@ -15,7 +20,9 @@ import { CodeService } from './code.service';
 export class ThreeComponent implements OnInit, AfterViewInit {
   @ViewChild("screen", { static: true }) private screen: ElementRef | undefined;
   @ViewChild("box", { static: true }) private box: ElementRef | undefined;
-
+  // 後からパラメータを更新できるように、コールバック関数を保持しておく
+  updateParamsCallback?: makeJscad.UpdateParamsCallback;
+  
   private isDragging = false;
 
   constructor(
@@ -28,10 +35,25 @@ export class ThreeComponent implements OnInit, AfterViewInit {
 
   ngAfterViewInit() {
     if (this.screen) {
-        if(this.scene.OnInit(this.screen.nativeElement as HTMLCanvasElement))
-          this.code.runCode();
+        // if(this.scene.OnInit(this.screen.nativeElement as HTMLCanvasElement))
+        //   this.code.runCode();
+
+      const container = this.screen.nativeElement;
+    
+      // makeJscad の呼び出し
+      makeJscad(container, { name: 'angularJscadInstance', logging: true })
+        .then((updateParams: makeJscad.UpdateParamsCallback) => {
+          this.updateParamsCallback = updateParams;
+          console.log('JSCAD インスタンスが初期化されました。');
+          
+          // 例えば、初期パラメータの更新が必要な場合は以下のように呼び出すことができます
+          // this.updateParamsCallback({ someParameter: 42 });
+        })
+        .catch(error => {
+          console.error('JSCAD インスタンスの初期化エラー:', error);
+        });
       }
-  }
+    }
 
   // マウスクリック時のイベント
   public onDoubleClick(event: MouseEvent) {
