@@ -13,6 +13,16 @@ if (!fs.existsSync(typesDir)) {
 // Read all @jscad packages
 const packages = fs.readdirSync(jscadDir);
 
+// Create web package type definitions manually since it requires special handling
+const webTypesDir = path.join(typesDir, 'web');
+if (!fs.existsSync(webTypesDir)) {
+  fs.mkdirSync(webTypesDir, { recursive: true });
+}
+fs.copyFileSync(
+  path.join(__dirname, 'types', '@jscad', 'web', 'index.d.ts'),
+  path.join(webTypesDir, 'index.d.ts')
+);
+
 packages.forEach(pkg => {
   const pkgDir = path.join(jscadDir, pkg);
   const pkgTypesDir = path.join(typesDir, pkg);

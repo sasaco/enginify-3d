@@ -5,10 +5,7 @@ import { SelectBoxComponent } from '../select-box/select-box.component';
 import { SceneService } from './scene.service';
 import { CodeService } from './code.service';
 // import * as OpenJSCAD from '@jscad/modeling';
-// import * as OpenJSCAD from '@jscad/web';
-// const { createRoot } = require('@jscad/web')
-// import { createRoot } from '@jscad/web';
-import makeJscad from '@jscad/web';
+import * as OpenJSCAD from '@jscad/web';
 
 @Component({
   selector: 'app-three',
@@ -21,7 +18,7 @@ export class ThreeComponent implements OnInit, AfterViewInit {
   @ViewChild("screen", { static: true }) private screen: ElementRef | undefined;
   @ViewChild("box", { static: true }) private box: ElementRef | undefined;
   // 後からパラメータを更新できるように、コールバック関数を保持しておく
-  updateParamsCallback?: makeJscad.UpdateParamsCallback;
+  updateParamsCallback?: (params: unknown) => void;
   
   private isDragging = false;
 
@@ -40,16 +37,16 @@ export class ThreeComponent implements OnInit, AfterViewInit {
 
       const container = this.screen.nativeElement;
     
-      // makeJscad の呼び出し
-      makeJscad(container, { name: 'angularJscadInstance', logging: true })
-        .then((updateParams: makeJscad.UpdateParamsCallback) => {
+      // OpenJSCAD の呼び出し
+      OpenJSCAD.createRoot(container, { name: 'angularJscadInstance', logging: true })
+        .then((updateParams: (params: unknown) => void) => {
           this.updateParamsCallback = updateParams;
           console.log('JSCAD インスタンスが初期化されました。');
           
           // 例えば、初期パラメータの更新が必要な場合は以下のように呼び出すことができます
           // this.updateParamsCallback({ someParameter: 42 });
         })
-        .catch(error => {
+        .catch((error: Error) => {
           console.error('JSCAD インスタンスの初期化エラー:', error);
         });
       }
