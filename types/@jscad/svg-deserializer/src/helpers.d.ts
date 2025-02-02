@@ -1,0 +1,10 @@
+export function svg2cag(vec: any, svgUnitsPmm: any): number[];
+export function cagLengthX(css: any, svgUnitsPmm: any, svgUnitsX: any): number;
+export function cagLengthY(css: any, svgUnitsPmm: any, svgUnitsY: any): number;
+export function cagLengthP(css: any, svgUnitsPmm: any, svgUnitsV: any): number;
+export function css2cag(css: any, unit: any): number;
+export function cagColor(value: any): number[];
+export function cssStyle(element: any, name: any): RegExpExecArray;
+export function reflect(x: any, y: any, px: any, py: any): any[];
+export function groupValue(svgGroups: any, name: any): any;
+export function svgColorForTarget(target: any, svgObject: any): any[];

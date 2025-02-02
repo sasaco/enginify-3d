@@ -10,7 +10,7 @@
   "private": true,
   "main": "electron/main/main.js",
   "scripts": {
-    "postinstall": "npx electron-builder install-app-deps && node src/assets/monaco-editor/monaco-copy.js && node src/assets/web-ifc/web-ifc-copy.js",
+    "postinstall": "npx electron-builder install-app-deps",
     "start": "ng serve -c dev",
     "build": "ng build -c production",
     "tsc": "tsc -p electron/tsconfig.json",
@@ -30,7 +30,7 @@
     "@angular/platform-browser-dynamic": "18.2.13",
     "@angular/router": "18.2.13",
     "@jscad/modeling": "^2.12.5",
-    "@jscad/web": "^2.6.10",
+    "@jscad/regl-renderer": "^2.6.12",
     "flowbite": "^3.0.0",
     "konva": "^9.3.18",
     "monaco-editor": "^0.52.2",

@@ -1,0 +1,12 @@
+import { makeBlob } from "@jscad/io-utils";
+export function solidsAsBlob(solids: any, params: any): Blob;
+import amfSerializer = require("@jscad/amf-serializer");
+import dxfSerializer = require("@jscad/dxf-serializer");
+import jsonSerializer = require("@jscad/json-serializer");
+import objSerializer = require("@jscad/obj-serializer");
+import stlSerializer = require("@jscad/stl-serializer");
+import svgSerializer = require("@jscad/svg-serializer");
+import x3dSerializer = require("@jscad/x3d-serializer");
+import m3fSerializer = require("@jscad/3mf-serializer");
+import deserializers = require("@jscad/io/deserializers");
+export { makeBlob, amfSerializer, dxfSerializer, jsonSerializer, objSerializer, stlSerializer, svgSerializer, x3dSerializer, m3fSerializer, deserializers };

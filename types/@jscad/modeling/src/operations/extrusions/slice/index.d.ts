@@ -1,0 +1,12 @@
+export let calculatePlane: typeof import("./calculatePlane");
+export let clone: typeof import("./clone");
+export let create: typeof import("./create");
+export let equals: typeof import("./equals");
+export let fromPoints: typeof import("./fromPoints");
+export let fromSides: typeof import("./fromSides");
+export let isA: typeof import("./isA");
+export let reverse: typeof import("./reverse");
+export let toEdges: typeof import("./toEdges");
+export let toPolygons: typeof import("./toPolygons");
+export let toString: typeof import("./toString");
+export let transform: typeof import("./transform");

@@ -1,0 +1,1 @@
+export function main(): ((geom2.Geom2 & import("@jscad/modeling/src/geometries/types").Colored) | (geom3.Geom3 & import("@jscad/modeling/src/geometries/types").Colored) | (path2.Path2 & import("@jscad/modeling/src/geometries/types").Colored))[];

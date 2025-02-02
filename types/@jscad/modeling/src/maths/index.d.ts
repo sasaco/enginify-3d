@@ -1,0 +1,9 @@
+export let constants: typeof maths.constants;
+export let line2: typeof maths.line2;
+export let line3: typeof maths.line3;
+export let mat4: typeof maths.mat4;
+export let plane: typeof maths.plane;
+export let utils: typeof maths.utils;
+export let vec2: typeof maths.vec2;
+export let vec3: typeof maths.vec3;
+export let vec4: typeof maths.vec4;

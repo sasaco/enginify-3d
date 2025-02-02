@@ -8,7 +8,10 @@ import { CodeService } from './code.service';
 // import * as OpenJSCAD from '@jscad/web';
 // const { createRoot } = require('@jscad/web')
 // import { createRoot } from '@jscad/web';
-import makeJscad from '@jscad/web';
+import { Geom3, Poly3 } from "@jscad/modeling/src/geometries/types";
+import { subtract } from "@jscad/modeling/src/operations/booleans";
+import { rotate, translate } from "@jscad/modeling/src/operations/transforms";
+import { cuboid, sphere, cylinder } from "@jscad/modeling/src/primitives";
 
 @Component({
   selector: 'app-three',
@@ -22,7 +25,7 @@ export class ThreeComponent implements OnInit, AfterViewInit {
   @ViewChild("box", { static: true }) private box: ElementRef | undefined;
   // 後からパラメータを更新できるように、コールバック関数を保持しておく
   updateParamsCallback?: makeJscad.UpdateParamsCallback;
-  
+
   private isDragging = false;
 
   constructor(

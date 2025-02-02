@@ -1,0 +1,14 @@
+export let clone: typeof import("../vec4/clone");
+export let copy: typeof import("../vec4/copy");
+export let create: typeof import("../vec4/create");
+export let equals: typeof import("../vec4/equals");
+export let flip: typeof import("./flip");
+export let fromNormalAndPoint: typeof import("./fromNormalAndPoint");
+export let fromValues: typeof import("../vec4/fromValues");
+export let fromNoisyPoints: typeof import("./fromNoisyPoints");
+export let fromPoints: typeof import("./fromPoints");
+export let fromPointsRandom: typeof import("./fromPointsRandom");
+export let projectionOfPoint: typeof import("./projectionOfPoint");
+export let signedDistanceToPoint: typeof import("./signedDistanceToPoint");
+export let toString: typeof import("../vec4/toString");
+export let transform: typeof import("./transform");

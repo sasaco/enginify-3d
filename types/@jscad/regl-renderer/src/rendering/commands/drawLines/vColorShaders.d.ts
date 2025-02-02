@@ -1,0 +1,3 @@
+declare const vColorFrag: "\nprecision mediump float;\nvarying vec4 vColor;\n\nvoid main () {\n  gl_FragColor = vColor;\n}\n";
+declare const vColorVert: "\nprecision mediump float;\n\nuniform float camNear, camFar;\nuniform mat4 model, view, projection;\n\nattribute vec3 position, normal;\nattribute vec4 color;\n\nvarying vec3 surfaceNormal, surfacePosition;\nvarying vec4 _worldSpacePosition;\nvarying vec4 vColor;\n\nvoid main() {\n  vColor = color;\n\n  surfacePosition = position;\n  surfaceNormal = normal;\n  vec4 worldSpacePosition = model * vec4(position, 1);\n  _worldSpacePosition = worldSpacePosition;\n\n  vec4 glPosition = projection * view * model * vec4(position, 1);\n  gl_Position = glPosition;\n}\n";
+export { vColorFrag as frag, vColorVert as vert };

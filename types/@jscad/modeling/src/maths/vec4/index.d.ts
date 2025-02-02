@@ -1,0 +1,9 @@
+export let clone: typeof import("./clone");
+export let copy: typeof import("./copy");
+export let create: typeof import("./create");
+export let dot: typeof import("./dot");
+export let equals: typeof import("./equals");
+export let fromScalar: typeof import("./fromScalar");
+export let fromValues: typeof import("./fromValues");
+export let toString: typeof import("./toString");
+export let transform: typeof import("./transform");
