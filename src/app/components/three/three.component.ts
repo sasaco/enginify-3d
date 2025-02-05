@@ -28,8 +28,8 @@ export class ThreeComponent implements OnInit, AfterViewInit {
 
   ngAfterViewInit() {
     if (this.screen) {
-        if(this.scene.OnInit(this.screen.nativeElement as HTMLCanvasElement))
-          this.code.runCode();
+        // if(this.scene.OnInit(this.screen.nativeElement as HTMLCanvasElement))
+        //   this.code.runCode();
       }
   }
 
