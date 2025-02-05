@@ -53,7 +53,7 @@ export class SceneService {
     const SCREEN_WIDTH = this.container.clientWidth;
     const SCREEN_HEIGHT = this.container.clientHeight;
     const cameraMatrix = this.getCameraMatrix(SCREEN_WIDTH, SCREEN_HEIGHT);
-    const near: number = 0.1;
+    const near: number = -1000;
     const far: number = 1000;
     this.camera = new THREE.OrthographicCamera( 
       cameraMatrix.left, cameraMatrix.right, 
@@ -88,12 +88,17 @@ export class SceneService {
 
     const helper = new THREE.GridHelper( 100, 100 );
     helper.position.y = -0.199;
-    (helper.material as THREE.Material).opacity = 0.25;
-    (helper.material as THREE.Material).transparent = true;
+    const helperMaterial = helper.material as THREE.Material;
+    helperMaterial.opacity = 0.25;
+    helperMaterial.transparent = true;
     this.scene.add( helper );
 
     // レンダラーの設定
-    this.renderer = new THREE.WebGLRenderer( { antialias: true } );
+    this.renderer = new THREE.WebGLRenderer( { 
+      preserveDrawingBuffer: true,
+      alpha: false,    // transparent background
+      antialias: true // smooth edges
+    });
     this.renderer.setPixelRatio( window.devicePixelRatio );
     this.renderer.setSize( SCREEN_WIDTH, SCREEN_HEIGHT );
     this.renderer.shadowMap.enabled = true;
