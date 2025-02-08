@@ -44,21 +44,39 @@ export class ItemIfcService {
 
     console.log("Loading " + geometries.length + " geometries and " + transparentGeometries.length + " transparent geometries");
     if (geometries.length > 0) {
-      const combinedGeometry = mergeBufferGeometries(geometries);
       let mat = new THREE.MeshPhongMaterial({ side: THREE.DoubleSide });
       mat.vertexColors = true;
-      const mergedMesh = new THREE.Mesh(combinedGeometry, mat);
-      this.scene.add(mergedMesh);
+      geometries.forEach(geom => {
+
+        // 座標データを取得 ----------------------------
+        const positions = (geom.attributes.position as THREE.BufferAttribute).array;
+        // 平均を計算
+        const avg = new THREE.Vector3();
+        for (let i = 0; i < positions.length; i += 3) {
+          avg.add(new THREE.Vector3(positions[i], positions[i + 1], positions[i + 2]));
+        }
+        avg.divideScalar(positions.length / 3);
+        // --------------------------------------------
+
+        const mergedMesh = new THREE.Mesh(geom, mat);
+        mergedMesh.name = `ifc(${avg.x},${avg.y},${avg.z})`;
+
+        if(this.scene.add(mergedMesh))
+          this.scene.addTransformTarget(mergedMesh);
+      });
     }
 
     if (transparentGeometries.length > 0) {
-      const combinedGeometryTransp = mergeBufferGeometries(transparentGeometries);
       let matTransp = new THREE.MeshPhongMaterial({ side: THREE.DoubleSide });
       matTransp.vertexColors = true;
       matTransp.transparent = true;
       matTransp.opacity = 0.5;
-      const mergedMeshTransp = new THREE.Mesh(combinedGeometryTransp, matTransp);
-      this.scene.add(mergedMeshTransp);
+      transparentGeometries.forEach(geom => {
+        const mergedMeshTransp = new THREE.Mesh(geom, matTransp);
+        mergedMeshTransp.name = "transparent-ifc";
+        if(this.scene.add(mergedMeshTransp))
+          this.scene.addTransformTarget(mergedMeshTransp);
+      });
     }
 
     this.scene.render();

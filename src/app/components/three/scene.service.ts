@@ -119,6 +119,7 @@ export class SceneService {
 
     // 物体移動コントロールの設定
     this.transformControl = new TransformControls( this.camera, this.renderer.domElement );
+    this.transformControl.setTranslationSnap(1);
     this.transformControl.addEventListener( 'change', this.render );
     this.transformControl.addEventListener( 'dragging-changed', ( event ) => {
       if(this.controls === null)  return;
@@ -146,6 +147,13 @@ export class SceneService {
       return;
     }
     this.camera.updateProjectionMatrix();
+  }
+
+  // 物体移動コントロールの設定
+  public setTranceformControlMode(mode: "translate" | "rotate" | "scale") {
+    if (this.transformControl !== null) {
+      this.transformControl.setMode(mode);
+    }
   }
 
   // マウスDown
@@ -219,11 +227,22 @@ export class SceneService {
   }
 
   // シーンにオブジェクトを追加する
-  public add(...threeObject: THREE.Object3D[]): void {
-    if(!this.scene) return;
+  public add(...threeObject: THREE.Object3D[]): boolean {
+    if(!this.scene) return false;
     for (const obj of threeObject) {
       this.scene.add(obj);
+    }
+    return true;
+  }
+
+  public addTransformTarget(...threeObject: THREE.Object3D[]): void {
+    for (const obj of threeObject) {
       this.transformTarget.push(obj);
     }
+  }
+
+  // シーンにオブジェクトを追加する
+  public get(): THREE.Object3D[]{
+    return this.transformTarget;
   }
 }
