@@ -26,36 +26,48 @@ export class ItemViewPortService {
     // 赤い線用のマテリアル
     const lineMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
     // 投影対象となる現在シーンに登録されているオブジェクト
-    const targetList = this.scene.get();
+    let objList = this.scene.get();
     // ワールド空間での Plane の法線を取得（通常、PlaneGeometry は XY 平面や XZ 平面に配置されているので注意）
-    const planeNormal  = new THREE.Vector3();
-    ViewPortPlane.getWorldDirection(planeNormal);
+    const planeNormal = ViewPortPlane.getWorldDirection(new THREE.Vector3());
 
-    for (const target of targetList) {
-      // 例外処理（ViewPortに反映しないものはスキップ）
-      if(!('geometry'in target))
-        continue;
-      if(target.name == 'view port')
-        continue;
-      if(target.type == 'lineSegments')
-        continue;
+    // 例外処理（ViewPortに反映しないものはスキップ）
+    objList = objList.filter(obj => obj.type == 'Mesh');
+    objList = objList.filter(obj => obj.name !== 'view port');
+
+    for (const obj of objList) {
 
       // まず、ジオメトリから面情報（頂点インデックスや法線）を取得
-      const geometry: any = target['geometry'];
-
+      const geometry: any = (obj as THREE.Mesh).geometry;
       const faces = this.getFacesFromBufferGeometry(geometry);
-      // const enableFaces = [];
-      // for(const face of faces){
-      //   if(this.isEdgeVisible(face.center, planeNormal, target, targetList)){
-      //     enableFaces.push(face);
-      //   }
-      // }
 
+      // 大まかにMashと衝突するか判定
+      const enableFaces1 = [];
+      for(const face of faces){
+        if(this.isEdgeVisible(face.center, planeNormal, face, objList)){
+          enableFaces1.push(face);
+        }
+      }
+      if(enableFaces1.length == 0){
+        continue;
+      }
+      // 面の中心が隠れているか判定
+      const objList2 = enableFaces1.map(face => face.mesh);
+      const enableFaces = [];
+      for(const face of enableFaces1){
+        if(this.isEdgeVisible(face.center, planeNormal, face, objList2)){
+          if(face.secter === face.mesh){
+            enableFaces.push(face);
+          }
+        }
+      }
+      if(enableFaces.length == 0){
+        continue;
+      }
 
       // エッジとそれに接する面の組を保持するマップ
       const edgeFaceMap = new Map();
       // 各面について辺を登録する（辺のキーは「小さい方の頂点インデックス_大きい方の頂点インデックス」とする）
-      faces.forEach(face => {
+      enableFaces.forEach(face => {
         const indices = [ face.a, face.b, face.c ];
         for (let i = 0; i < 3; i++) {
           const i1 = indices[i];
@@ -66,7 +78,7 @@ export class ItemViewPortService {
           }
           edgeFaceMap.get(key).push(face);
         }
-      });
+      }); 
 
 
       // シルエットエッジのリスト
@@ -88,7 +100,7 @@ export class ItemViewPortService {
           }
         }
       });
-
+      
       // silhouetteEdges を赤い線で描画するコード
       // 元のジオメトリから position 属性を取得
       const posAttr = geometry.attributes.position;
@@ -112,13 +124,9 @@ export class ItemViewPortService {
           (posAttr as THREE.BufferAttribute).getZ(i2)
         );
 
-        // 隠線チェック：エッジの中点がカメラから見て隠れていないかを判定
-        if (this.isEdgeVisible(v1, planeNormal, target, targetList)) {
-          // 隠れていないエッジのみを描画する
-          // 2頂点の座標を linePositions 配列に追加
-          linePositions.push(v1.x, v1.y, v1.z);
-          linePositions.push(v2.x, v2.y, v2.z);
-        }
+        // 2頂点の座標を linePositions 配列に追加
+        linePositions.push(v1.x, v1.y, v1.z);
+        linePositions.push(v2.x, v2.y, v2.z);
       });
 
       // linePositions から BufferGeometry を作成
@@ -131,19 +139,20 @@ export class ItemViewPortService {
       // LineSegments オブジェクトを作成してシーンに追加
       const lineSegments = new THREE.LineSegments(lineGeometry, lineMaterial);
       lineSegmentsList.push(lineSegments);
+      
     }
     // シーンに追加
     for(const lineSegments of lineSegmentsList){
       this.scene.add(lineSegments);
     }
-
   }
 
   // ヒットテスト用の関数：エッジの中点が隠れていないかチェックする
-  private isEdgeVisible(midpoint: THREE.Vector3, 
+  private isEdgeVisible(
+    midpoint: THREE.Vector3, 
     planeNormal: THREE.Vector3, 
-    target: THREE.Object3D<THREE.Event>, 
-    targetList: THREE.Object3D<THREE.Event>[],
+    face: any, 
+    objList: THREE.Object3D<THREE.Event>[],
     tolerance = 0.001) {
 
 
@@ -152,19 +161,41 @@ export class ItemViewPortService {
     // レイキャスターの設定
     const raycaster = new THREE.Raycaster(midpoint, direction);
     // ※ここではシーン内のすべてのオブジェクトを対象にしていますが、必要に応じて対象を絞ってください
-    const intersects = raycaster.intersectObjects(targetList, true);
+    const intersects = raycaster.intersectObjects(objList, true);
 
-    if (intersects.length > 0) {
-          return false;
-        }
-    // ヒットが無い場合は可視とみなす（通常はありえないケース）
+    // intersects が空の場合は、交差しているオブジェクトがないので face.secter を null にして処理を続ける
+    if(intersects.length === 0) {
+      face.secter = null;
+      return true;
+    }
+    
+    // 交差したオブジェクトのうち、自分自身以外の面と交差しているものがあれば隠れていると判定
+    if(intersects.length > 1) {
+      return false;
+    }
+
+    const secter = intersects[0];
+    if(secter.object != null){
+      face.secter = secter['object'];
+    }else{
+      face.secter = null;
+    }
     return true;
   }
 
   // BufferGeometry から index と position 属性を用いて、各三角形（面）の情報（頂点インデックス、面の中心、面法線）を生成する例です。
   // ジオメトリがインデックス付きの場合と、インデックスが存在しない場合の両方に対応しています。
-  private getFacesFromBufferGeometry(geometry: THREE.BufferGeometry): { a: number; b: number; c: number; center: THREE.Vector3;  normal: THREE.Vector3; }[] 
+  private getFacesFromBufferGeometry(geometry: THREE.BufferGeometry)
+    : { a: number; b: number; c: number; mesh: THREE.Mesh; center: THREE.Vector3; normal: THREE.Vector3; secter: THREE.Mesh | null;  }[] 
   {
+    // MeshBasicMaterial を利用して半透明のマテリアルを作成
+    const faceMaterial = new THREE.MeshBasicMaterial({
+      color: 0x00ff00,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.5
+    });
+  
     // 必要な属性を取得
     const positionAttribute = geometry.attributes.position;
     const positions = (positionAttribute as THREE.BufferAttribute).array;
@@ -177,36 +208,7 @@ export class ItemViewPortService {
         const a = indices[i];
         const b = indices[i + 1];
         const c = indices[i + 2];
-  
-        // 各頂点の座標を取得
-        const vA = new THREE.Vector3(
-          positions[a * 3],
-          positions[a * 3 + 1],
-          positions[a * 3 + 2]
-        );
-        const vB = new THREE.Vector3(
-          positions[b * 3],
-          positions[b * 3 + 1],
-          positions[b * 3 + 2]
-        );
-        const vC = new THREE.Vector3(
-          positions[c * 3],
-          positions[c * 3 + 1],
-          positions[c * 3 + 2]
-        );
-  
-        // 面の中心（3頂点の平均）
-        const center = new THREE.Vector3()
-          .addVectors(vA, vB)
-          .add(vC)
-          .divideScalar(3);
-  
-        // 面の法線計算
-        const cb = new THREE.Vector3().subVectors(vC, vB);
-        const ab = new THREE.Vector3().subVectors(vA, vB);
-        const normal = new THREE.Vector3().crossVectors(cb, ab).normalize();
-  
-        faces.push({ a, b, c, center, normal });
+        faces.push(this.getFace(positions, a, b, c));
       }
     } else {
       // インデックスなしの場合は、position 属性の順番で3頂点ずつが1面となる
@@ -215,39 +217,63 @@ export class ItemViewPortService {
         const a = i;
         const b = i + 1;
         const c = i + 2;
-  
-        const vA = new THREE.Vector3(
-          positions[a * 3],
-          positions[a * 3 + 1],
-          positions[a * 3 + 2]
-        );
-        const vB = new THREE.Vector3(
-          positions[b * 3],
-          positions[b * 3 + 1],
-          positions[b * 3 + 2]
-        );
-        const vC = new THREE.Vector3(
-          positions[c * 3],
-          positions[c * 3 + 1],
-          positions[c * 3 + 2]
-        );
-  
-        const center = new THREE.Vector3()
-          .addVectors(vA, vB)
-          .add(vC)
-          .divideScalar(3);
-  
-        const cb = new THREE.Vector3().subVectors(vC, vB);
-        const ab = new THREE.Vector3().subVectors(vA, vB);
-        const normal = new THREE.Vector3().crossVectors(cb, ab).normalize();
-  
-        faces.push({ a, b, c, center, normal });
+        faces.push(this.getFace(positions, a, b, c));
       }
     }
   
     return faces;
   }
   
+  private getFace(positions: ArrayLike<number>, a: number, b: number, c: number)
+    : { a: number; b: number; c: number; mesh: THREE.Mesh; center: THREE.Vector3, normal: THREE.Vector3; secter: THREE.Mesh | null; }
+  {
+    // MeshBasicMaterial を利用して半透明のマテリアルを作成
+    const faceMaterial = new THREE.MeshBasicMaterial({
+      color: 0x00ff00,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.5
+    });
+
+    // 各頂点の座標を取得
+    const vA = new THREE.Vector3(
+      positions[a * 3],
+      positions[a * 3 + 1],
+      positions[a * 3 + 2]
+    );
+    const vB = new THREE.Vector3(
+      positions[b * 3],
+      positions[b * 3 + 1],
+      positions[b * 3 + 2]
+    );
+    const vC = new THREE.Vector3(
+      positions[c * 3],
+      positions[c * 3 + 1],
+      positions[c * 3 + 2]
+    );
+    const vertices = new Float32Array([
+      vA.x, vA.y, vA.z,
+      vB.x, vB.y, vB.z,
+      vC.x, vC.y, vC.z
+    ]);
+    const faceGeometry = new THREE.BufferGeometry();
+    faceGeometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+    faceGeometry.computeVertexNormals();
+    const mesh = new THREE.Mesh(faceGeometry, faceMaterial);
+
+    const center = new THREE.Vector3()
+      .addVectors(vA, vB)
+      .add(vC)
+      .divideScalar(3);
+
+    const cb = new THREE.Vector3().subVectors(vC, vB);
+    const ab = new THREE.Vector3().subVectors(vA, vB);
+    const normal = new THREE.Vector3().crossVectors(cb, ab).normalize();
+
+    const secter = null;
+
+    return { a, b, c, mesh, center, normal, secter};
+  }
  
   ////////////////////////////////////////////////////////////////////
   // konva.js の図形を作成
@@ -291,8 +317,7 @@ export class ItemViewPortService {
 
   plane.name = 'view port';
   // シーンに登録する
-  // if(this.scene.add( plane ))
-  //   this.scene.addTransformTarget( plane );
+  this.scene.add( plane );
 
   return plane;
   }

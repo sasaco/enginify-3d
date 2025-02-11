@@ -48,6 +48,9 @@ export class ItemIfcService {
       mat.vertexColors = true;
       geometries.forEach(geom => {
 
+        const newMesh = new THREE.Mesh(geom, mat);
+        newMesh.name = `ifc`;
+
         // 座標データを取得 ----------------------------
         const positions = (geom.attributes.position as THREE.BufferAttribute).array;
         // 平均を計算
@@ -57,12 +60,9 @@ export class ItemIfcService {
         }
         avg.divideScalar(positions.length / 3);
         // --------------------------------------------
+        (newMesh as any).center = avg; // 平均座標を保持
 
-        const mergedMesh = new THREE.Mesh(geom, mat);
-        mergedMesh.name = `ifc(${avg.x},${avg.y},${avg.z})`;
-
-        if(this.scene.add(mergedMesh))
-          this.scene.addTransformTarget(mergedMesh);
+        this.scene.add(newMesh)
       });
     }
 
@@ -74,8 +74,7 @@ export class ItemIfcService {
       transparentGeometries.forEach(geom => {
         const mergedMeshTransp = new THREE.Mesh(geom, matTransp);
         mergedMeshTransp.name = "transparent-ifc";
-        if(this.scene.add(mergedMeshTransp))
-          this.scene.addTransformTarget(mergedMeshTransp);
+        this.scene.add(mergedMeshTransp);
       });
     }
 

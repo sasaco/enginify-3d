@@ -231,14 +231,9 @@ export class SceneService {
     if(!this.scene) return false;
     for (const obj of threeObject) {
       this.scene.add(obj);
-    }
-    return true;
-  }
-
-  public addTransformTarget(...threeObject: THREE.Object3D[]): void {
-    for (const obj of threeObject) {
       this.transformTarget.push(obj);
     }
+    return true;
   }
 
   // シーンにオブジェクトを追加する
