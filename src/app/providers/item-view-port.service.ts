@@ -1,13 +1,17 @@
 import { Injectable } from '@angular/core';
 import { SceneService } from '../components/three/scene.service';
 import * as THREE from "three";
+import { KonvaService } from '../components/konva/konva.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ItemViewPortService {
 
-  constructor( private scene: SceneService) { }
+  constructor( 
+    private scene: SceneService,
+    private konva: KonvaService
+  ) { }
 
   public createItem() {
     // three.js のメッシュを作成
@@ -20,8 +24,7 @@ export class ItemViewPortService {
 
   ////////////////////////////////////////////////////////////////////
   // ViewPort に表示するアイテムを作成
-  private setinViewPort(ViewPortPlane: THREE.Mesh<THREE.BufferGeometry, THREE.Material | THREE.Material[]>) {
-
+  private setinViewPort(plane: THREE.Mesh<THREE.BufferGeometry, THREE.Material | THREE.Material[]>) {
 
     // 投影対象となる現在シーンに登録されているオブジェクト
     let objList = this.scene.get();
@@ -29,322 +32,355 @@ export class ItemViewPortService {
     objList = objList.filter(obj => obj.type == 'Mesh');
     objList = objList.filter(obj => obj.name !== 'view port');
     // ワールド空間での Plane の法線を取得（通常、PlaneGeometry は XY 平面や XZ 平面に配置されているので注意）
-    const planeNormal = ViewPortPlane.getWorldDirection(new THREE.Vector3());
+    const normal = plane.getWorldDirection(new THREE.Vector3());
+    const position = plane.getWorldPosition(new THREE.Vector3());
 
-    // 大まかにMashと衝突するか判定
-    const enableMesh: THREE.Mesh[] = [];
     for (const obj of objList) {
-      if(this.isEdgeVisible((obj as any).center, planeNormal, obj, objList)){
-        enableMesh.push(obj as THREE.Mesh);
+      const mesh = obj as THREE.Mesh;
+      const triangles = this.getVisibleTriangles(mesh, position);
+      const polygons = this.mergeTrianglesToPolygons(triangles, 0.98);
+
+      const paths: THREE.Vector2[][] = [];
+      for (const polygon3D of polygons) {
+        const polygon2D = this.sortPointsByAngle(
+          this.projectPolygon(polygon3D, normal)); 
+        paths.push(polygon2D);
       }
-    }
-    if(enableMesh.length == 0){
-      return;
+      console.log(paths);
     }
     
-    // シルエットエッジを描画するメッシュのリスト
-    const meshList = [];
-    for (const obj of enableMesh) {
-      // まず、ジオメトリから面情報（頂点インデックスや法線）を取得
-      const geometry: any = obj.geometry;
-      for(const face of this.getFacesFromBufferGeometry(geometry)){
-        meshList.push(face);
-      }
-    }
+  }
 
-    // 面の中心が隠れているか判定
-    const enableFaces = [];
-    for(const face of meshList){
-      if(this.isEdgeVisible((face as any).center, planeNormal, face, meshList)){
-        if((face as any).secter === face){
-          enableFaces.push(face);
+  // 1. 三角形のグループ化（法線がほぼ同じもの同士をまとめる）
+  private groupTrianglesByNormal(
+    triangles: {
+        a: THREE.Vector3;
+        b: THREE.Vector3;
+        c: THREE.Vector3;
+        normal: THREE.Vector3;
+    }[], 
+    dotThreshold = 0.98) 
+{
+    const groups = [];
+    for (const tri of triangles) {
+      let added = false;
+      for (const group of groups) {
+        // 代表の法線との内積が閾値以上なら同グループとする
+        if (tri.normal.dot(group.normal) >= dotThreshold) {
+          group.triangles.push(tri);
+          added = true;
+          break;
         }
       }
+      if (!added) {
+        groups.push({
+          normal: tri.normal.clone(), // 最初の三角形の法線を代表として使用
+          triangles: [tri]
+        });
+      }
     }
-    if(enableFaces.length == 0){
-      return;
+    return groups;
+  }
+
+  // 2. グループ内の全頂点を抽出する
+  private getVerticesFromGroup(
+    group: {
+      normal: THREE.Vector3;
+      triangles: {
+          a: THREE.Vector3;
+          b: THREE.Vector3;
+          c: THREE.Vector3;
+          normal: THREE.Vector3;
+      }[]}) : THREE.Vector3[]
+  {
+    const vertices = [];
+    for (const tri of group.triangles) {
+      vertices.push(tri.a.clone(), tri.b.clone(), tri.c.clone());
+    }
+    return vertices;
+  }
+
+  // 3. あるグループの法線を用いて、全頂点を2D平面へ投影する
+  private projectPointsTo2D(vertices: THREE.Vector3[], normal: THREE.Vector3)
+    : { points2D: { pos: THREE.Vector2; original: THREE.Vector3 }[]; origin: THREE.Vector3; u: THREE.Vector3; v: THREE.Vector3 }
+  {
+    // 代表となる原点（ここでは最初の頂点）
+    const origin = vertices[0].clone();
+    // 法線と平行でない任意のベクトルを用意（通常は (0,1,0) でOK、ただし法線とほぼ平行なら (1,0,0)）
+    let arbitrary = new THREE.Vector3(0, 1, 0);
+    if (Math.abs(normal.dot(arbitrary)) > 0.99) {
+      arbitrary.set(1, 0, 0);
+    }
+    // u,v は原点を通る平面内の基底
+    const u = new THREE.Vector3().crossVectors(normal, arbitrary).normalize();
+    const v = new THREE.Vector3().crossVectors(normal, u).normalize();
+
+    // 各頂点を原点基準で (u,v) 座標に投影
+    const points2D = vertices.map(vertex => {
+      const relative = vertex.clone().sub(origin);
+      const x = relative.dot(u);
+      const y = relative.dot(v);
+      return { 
+        pos: new THREE.Vector2(x, y),
+        original: vertex.clone() // （必要なら元の3D座標も保持）
+      };
+    });
+
+    return { points2D, origin, u, v };
+  }
+
+  // 4. 2Dの点集合から凸包（Monotone Chainアルゴリズム）を求める
+  private convexHull2D(points: {
+    pos: THREE.Vector2;
+    original: THREE.Vector3;
+    }[]) 
+  {
+    // points は {x, y, original} を含むオブジェクトの配列
+    // まず、x（同値ならy）の昇順にソート
+    const pts = points.slice().sort((a, b) => {
+      if (a.pos.x === b.pos.x) return a.pos.y - b.pos.y;
+      return a.pos.x - b.pos.x;
+    });
+
+    // 外積（z成分）の計算
+    function cross(o: THREE.Vector2, a: THREE.Vector2, b: THREE.Vector2) {
+      return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
     }
 
-    // エッジとそれに接する面の組を保持するマップ
-    const edgeFaceMap = new Map();
-    // 各面について辺を登録する（辺のキーは「小さい方の頂点インデックス_大きい方の頂点インデックス」とする）
-    enableFaces.forEach(face => {
-      if (!face.geometry.index) return;
-      const indices = face.geometry.index.array;
-      for (let i = 0; i < 3; i++) {
-        const i1 = indices[i];
-        const i2 = indices[(i + 1) % 3];
-        const key = i1 < i2 ? `${i1}_${i2}` : `${i2}_${i1}`;
-        if (!edgeFaceMap.has(key)) {
-          edgeFaceMap.set(key, []);
-        }
-        edgeFaceMap.get(key).push(face);
+    const lower = [];
+    for (const p of pts) {
+      while (lower.length >= 2 && cross(lower[lower.length - 2].pos, lower[lower.length - 1].pos, p.pos) <= 0) {
+        lower.pop();
       }
-    }); 
+      lower.push(p);
+    }
+    const upper = [];
+    for (let i = pts.length - 1; i >= 0; i--) {
+      const p = pts[i];
+      while (upper.length >= 2 && cross(upper[upper.length - 2].pos, upper[upper.length - 1].pos, p.pos) <= 0) {
+        upper.pop();
+      }
+      upper.push(p);
+    }
+    // 最後の点（重複）を除外して連結
+    upper.pop();
+    lower.pop();
+    return lower.concat(upper);
+  }
+
+  // 5. 得られた2D凸包の点を元の3D空間へ再射影する
+  private mapHullPointsTo3D(
+    hullPoints2D: {
+      pos: THREE.Vector2;
+      original: THREE.Vector3;
+    }[], 
+    origin: THREE.Vector3, 
+    u: THREE.Vector3, 
+    v: THREE.Vector3) : THREE.Vector3[]
+  {
+    return hullPoints2D.map(p => {
+      // 点 p(x, y) を 3D座標に変換： origin + x*u + y*v
+      return origin.clone().add(u.clone().multiplyScalar(p.pos.x)).add(v.clone().multiplyScalar(p.pos.y));
+    });
+  }
+
+  // 6. すべての三角形群から、凸包による1つのポリゴンに統合する関数
+  private mergeTrianglesToPolygons(
+    visibleTriangles: { a: THREE.Vector3; b: THREE.Vector3; c: THREE.Vector3; normal: THREE.Vector3; }[], 
+    dotThreshold = 0.98) 
+      : { normal: THREE.Vector3; vertices: THREE.Vector3[] }[]
+  {
+    // (1) 法線でグループ化
+    const groups = this.groupTrianglesByNormal(visibleTriangles, dotThreshold);
+    const polygons: {
+      normal: THREE.Vector3; vertices: THREE.Vector3[]; // 凸包を構成する頂点（順序は凸包アルゴリズムにより得られる）
+    }[] = [];
+
+    // 各グループごとに凸包計算を実施
+    groups.forEach(group => {
+      // グループ内の全頂点を取得
+      const vertices = this.getVerticesFromGroup(group);
+
+      // (2) 2Dへ投影（このグループの法線を平面の法線とする）
+      const { points2D, origin, u, v } = this.projectPointsTo2D(vertices, group.normal);
+
+      // (3) 2D凸包計算
+      const hull2D = this.convexHull2D(points2D);
+
+      // (4) 2D凸包を3Dに再射影して、ポリゴンの頂点集合とする
+      const hull3D = this.mapHullPointsTo3D(hull2D, origin, u, v);
+
+      polygons.push({
+        normal: group.normal.clone(),
+        vertices: hull3D // 凸包を構成する頂点（順序は凸包アルゴリズムにより得られる）
+      });
+    });
+
+    return polygons;
+  }
+
+
+
+  /**
+   * ポリゴンを構成する3頂点を、指定された投影面の法線に基づく平面のX,Y座標に変換する
+   * （※投影面は原点を通ると仮定）
+   * @param polygon 頂点a,b,cを持つポリゴン（polygon.normal は使用しません）
+   * @param projectionNormal 投影面の法線ベクトル（例: { x: 0.6548614604158615, y: 0, z: -0.7557489448633091 }）
+   * @returns 投影面におけるX,Y座標に変換された頂点
+   */
+  private projectPolygon(
+    polygon: { normal: THREE.Vector3;  vertices: THREE.Vector3[]; },
+    projectionNormal: THREE.Vector3
+    ): THREE.Vector2[] 
+  {
+    // 投影面の法線（指定値）を正規化
+    const planeNormal = projectionNormal.clone().normalize();
+
+    // --- 投影面内の座標系を構築 ---
+    // 基準として (1, 0, 0) を使い、これと法線の外積で平面内のX軸を求める
+    let xAxis = new THREE.Vector3(1, 0, 0).cross(planeNormal);
+    // 万が一 (1,0,0) が法線と平行の場合は、(0,1,0) を利用
+    if (xAxis.lengthSq() === 0) {
+      xAxis = new THREE.Vector3(0, 1, 0).cross(planeNormal);
+    }
+    xAxis.normalize();
+
+    // Y軸は、法線とX軸との外積で求め、右手系となるようにする
+    const yAxis = new THREE.Vector3().crossVectors(planeNormal, xAxis).normalize();
+
+    // --- 各頂点の投影処理 ---
+    // 各頂点 P を、投影面上に直交投影する：
+    //   P_proj = P - (P・planeNormal) * planeNormal
+    // その後、投影面内での座標は、
+    //   X = P_proj ・ xAxis,  Y = P_proj ・ yAxis
+    const projectPoint = (P: THREE.Vector3): THREE.Vector2 => {
+      const distance = P.dot(planeNormal);
+      const projected = P.clone().sub(planeNormal.clone().multiplyScalar(distance));
+      return new THREE.Vector2(projected.dot(xAxis), projected.dot(yAxis));
+    };
     
-    // シルエットエッジのリスト
-    const silhouetteEdges: any[] = [];
-    // 各エッジについて、隣接する面のうち一方だけがビューポートに向いているかをチェック
-    edgeFaceMap.forEach((adjacentFaces, edgeKey) => {
-      if (adjacentFaces.length !== 2) {
-        // 例えばメッシュの境界エッジの場合は、片側だけの場合もあります
-        silhouetteEdges.push(edgeKey);
+    return polygon.vertices.map(projectPoint);
+  }
+
+  /**
+   * 重心からの偏角で点群をソートして、一筆書き可能な外周順（閉じた多角形）に並び替えます。
+   * ※点群が外周の頂点（または外周近く）であることを前提としています。
+   */
+  private sortPointsByAngle(points: THREE.Vector2[]): THREE.Vector2[] {
+    // 重心（centroid）の算出
+    const centroid = points.reduce(
+      (acc, p) => ({
+        x: acc.x + p.x,
+        y: acc.y + p.y,
+      }),
+      { x: 0, y: 0 }
+    );
+    centroid.x /= points.length;
+    centroid.y /= points.length;
+
+    // 各点の偏角を centroid を原点として算出し、ソートします。
+    // もし偏角が同じ場合は、重心からの距離が短い順に並べ替えます。
+    const sorted = points.slice().sort((a, b) => {
+      const angleA = Math.atan2(a.y - centroid.y, a.x - centroid.x);
+      const angleB = Math.atan2(b.y - centroid.y, b.x - centroid.x);
+      
+      if (angleA === angleB) {
+        const distA = (a.x - centroid.x) ** 2 + (a.y - centroid.y) ** 2;
+        const distB = (b.x - centroid.x) ** 2 + (b.y - centroid.y) ** 2;
+        return distA - distB;
+      }
+      return angleA - angleB;
+    });
+
+    return sorted;
+  }
+
+  /**
+   * 指定したメッシュのBufferGeometryについて、
+   * 投影面位置から見たときに前面（バックフェイスカリングされず描画される面）となる三角形を取得する関数
+   *
+   * @param {THREE.Mesh} mesh - BufferGeometryを持つメッシュ
+   * @param {THREE.Vector3} position - 投影面位置
+   * @returns {Array} visibleTriangles - 前面と判定された三角形の情報リスト
+   *         各要素は { a: Vector3, b: Vector3, c: Vector3, normal: Vector3 } のオブジェクト
+  */
+  private getVisibleTriangles(mesh: THREE.Mesh, position: THREE.Vector3) {
+    const geometry = mesh.geometry;
+    // BufferGeometryのposition属性を取得（Float32Arrayなど）
+    const positions = (geometry.attributes.position as THREE.BufferAttribute).array;
+    // インデックスが設定されている場合はそれを利用
+    const indices = geometry.index ? geometry.index.array : null;
+
+    const visibleTriangles = [];
+    const matrixWorld = mesh.matrixWorld;
+
+    // 作業用のベクトルを作成
+    const vA = new THREE.Vector3();
+    const vB = new THREE.Vector3();
+    const vC = new THREE.Vector3();
+    const normal = new THREE.Vector3();
+    const edge1 = new THREE.Vector3();
+    const edge2 = new THREE.Vector3();
+    const cameraToVertex = new THREE.Vector3();
+
+    // 三角形の数を決定
+    const numTriangles = indices ? indices.length / 3 : positions.length / 9;
+
+    for (let i = 0; i < numTriangles; i++) {
+      let a, b, c;
+      if (indices) {
+        // インデックスがある場合、各三角形はインデックス配列の連続3要素となる
+        a = indices[i * 3] * 3;
+        b = indices[i * 3 + 1] * 3;
+        c = indices[i * 3 + 2] * 3;
       } else {
-        const face1 = adjacentFaces[0];
-        const face2 = adjacentFaces[1];
-        // 各面の法線と plane の法線との内積を計算
-        const dot1 = face1.normal.dot(planeNormal);
-        const dot2 = face2.normal.dot(planeNormal);
-        // 片方のみ正面（＝内積が正）であればシルエットエッジ
-        if ((dot1 > 0 && dot2 <= 0) || (dot1 <= 0 && dot2 > 0)) {
-          silhouetteEdges.push(edgeKey);
-        }
-      }
-    });
-
-    // 赤い線用
-    const lineSegmentsList: THREE.LineSegments[] = [];
-    const lineMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
-    /*
-    for (const obj of objList) {
-
-      // まず、ジオメトリから面情報（頂点インデックスや法線）を取得
-      const geometry: any = (obj as THREE.Mesh).geometry;
-      const faces = this.getFacesFromBufferGeometry(geometry);
-
-      // 大まかにMashと衝突するか判定
-      const enableFaces1 = [];
-      for(const face of faces){
-        if(this.isEdgeVisible(face.center, planeNormal, face, objList)){
-          enableFaces1.push(face);
-        }
-      }
-      if(enableFaces1.length == 0){
-        continue;
-      }
-      // 面の中心が隠れているか判定
-      const objList2 = enableFaces1.map(face => face.mesh);
-      const enableFaces = [];
-      for(const face of enableFaces1){
-        if(this.isEdgeVisible(face.center, planeNormal, face, objList2)){
-          if(face.secter === face.mesh){
-            enableFaces.push(face);
-          }
-        }
-      }
-      if(enableFaces.length == 0){
-        continue;
+        // インデックスが無い場合は、連続した3頂点が1三角形となる
+        a = i * 9;
+        b = a + 3;
+        c = a + 6;
       }
 
-      // エッジとそれに接する面の組を保持するマップ
-      const edgeFaceMap = new Map();
-      // 各面について辺を登録する（辺のキーは「小さい方の頂点インデックス_大きい方の頂点インデックス」とする）
-      enableFaces.forEach(face => {
-        const indices = [ face.a, face.b, face.c ];
-        for (let i = 0; i < 3; i++) {
-          const i1 = indices[i];
-          const i2 = indices[(i + 1) % 3];
-          const key = i1 < i2 ? `${i1}_${i2}` : `${i2}_${i1}`;
-          if (!edgeFaceMap.has(key)) {
-            edgeFaceMap.set(key, []);
-          }
-          edgeFaceMap.get(key).push(face);
-        }
-      }); 
+      // 各頂点のローカル座標を取得
+      vA.set(positions[a], positions[a + 1], positions[a + 2]);
+      vB.set(positions[b], positions[b + 1], positions[b + 2]);
+      vC.set(positions[c], positions[c + 1], positions[c + 2]);
 
+      // ワールド座標へ変換（mesh.matrixWorldを適用）
+      vA.applyMatrix4(matrixWorld);
+      vB.applyMatrix4(matrixWorld);
+      vC.applyMatrix4(matrixWorld);
 
-      // シルエットエッジのリスト
-      const silhouetteEdges: any[] = [];
-      // 各エッジについて、隣接する面のうち一方だけがビューポートに向いているかをチェック
-      edgeFaceMap.forEach((adjacentFaces, edgeKey) => {
-        if (adjacentFaces.length !== 2) {
-          // 例えばメッシュの境界エッジの場合は、片側だけの場合もあります
-          silhouetteEdges.push(edgeKey);
-        } else {
-          const face1 = adjacentFaces[0];
-          const face2 = adjacentFaces[1];
-          // 各面の法線と plane の法線との内積を計算
-          const dot1 = face1.normal.dot(planeNormal);
-          const dot2 = face2.normal.dot(planeNormal);
-          // 片方のみ正面（＝内積が正）であればシルエットエッジ
-          if ((dot1 > 0 && dot2 <= 0) || (dot1 <= 0 && dot2 > 0)) {
-            silhouetteEdges.push(edgeKey);
-          }
-        }
-      });
-      
-      // silhouetteEdges を赤い線で描画するコード
-      // 元のジオメトリから position 属性を取得
-      const posAttr = geometry.attributes.position;
-      // silhouetteEdges の各エッジごとに、2頂点の座標を取得して配列に追加
-      const linePositions: number[] = [];
-      silhouetteEdges.forEach(edgeKey => {
-        // 例: edgeKey は "0_1" のような文字列
-        const indices = edgeKey.split('_').map((str: string) => parseInt(str));
-        const i1 = indices[0];
-        const i2 = indices[1];
+      // 三角形の法線を計算
+      // ※ 頂点の順番がカウンタークロックワイズであれば、計算された法線は外向きとなる
+      edge1.subVectors(vB, vA);
+      edge2.subVectors(vC, vA);
+      normal.crossVectors(edge1, edge2).normalize();
 
-        // THREE.BufferAttribute の getX, getY, getZ を利用して頂点座標を取得
-        const v1 = new THREE.Vector3(
-          (posAttr as THREE.BufferAttribute).getX(i1),
-          (posAttr as THREE.BufferAttribute).getY(i1),
-          (posAttr as THREE.BufferAttribute).getZ(i1)
-        );
-        const v2 = new THREE.Vector3(
-          (posAttr as THREE.BufferAttribute).getX(i2),
-          (posAttr as THREE.BufferAttribute).getY(i2),
-          (posAttr as THREE.BufferAttribute).getZ(i2)
-        );
+      // 投影面位置から頂点vAへの方向ベクトル（正規化）
+      cameraToVertex.subVectors(position, vA).normalize();
 
-        // 2頂点の座標を linePositions 配列に追加
-        linePositions.push(v1.x, v1.y, v1.z);
-        linePositions.push(v2.x, v2.y, v2.z);
-      });
-
-      // linePositions から BufferGeometry を作成
-      const lineGeometry = new THREE.BufferGeometry();
-      lineGeometry.setAttribute(
-        'position',
-        new THREE.Float32BufferAttribute(linePositions, 3)
-      );
-
-      // LineSegments オブジェクトを作成してシーンに追加
-      const lineSegments = new THREE.LineSegments(lineGeometry, lineMaterial);
-      lineSegmentsList.push(lineSegments);
-      
+      // バックフェイスカリングの判定
+      // OpenGL/three.jsでは、通常、投影面位置から見たときに
+      // (camera.position - vA)と法線の内積が **負** なら前面と判断される（描画される）
+      if (cameraToVertex.dot(normal) < 0) {
+        // 前面と判定された場合、その三角形の頂点情報と法線を配列に追加
+        visibleTriangles.push({
+          a: vA.clone(),
+          b: vB.clone(),
+          c: vC.clone(),
+          normal: normal.clone()
+        });
+      }
     }
-    */
-    // シーンに追加
-    for(const lineSegments of lineSegmentsList){
-      this.scene.add(lineSegments);
-    }
+
+    return visibleTriangles;
   }
 
-  // ヒットテスト用の関数：エッジの中点が隠れていないかチェックする
-  private isEdgeVisible(
-    midpoint: THREE.Vector3, 
-    planeNormal: THREE.Vector3, 
-    face: any, 
-    objList: THREE.Object3D<THREE.Event>[]): boolean
-  {
 
-
-    // 中点からplateに投影する位置へ向かう方向を求める
-    const direction = planeNormal.clone();
-    // レイキャスターの設定
-    const raycaster = new THREE.Raycaster(midpoint, direction);
-    // ※ここではシーン内のすべてのオブジェクトを対象にしていますが、必要に応じて対象を絞ってください
-    const intersects = raycaster.intersectObjects(objList, true);
-
-    // intersects が空の場合は、交差しているオブジェクトがないので face.secter を null にして処理を続ける
-    if(intersects.length === 0) {
-      face.secter = null;
-      return true;
-    }
-
-    // 交差したオブジェクトのうち、自分自身以外の面と交差しているものがあれば隠れていると判定
-    if(intersects.length > 1) {
-      return false;
-    }
-
-    const secter = intersects[0];
-    if(secter.object != null){
-      face.secter = secter['object'];
-    }else{
-      face.secter = null;
-    }
-    return true;
-  }
-
-  // BufferGeometry から index と position 属性を用いて、各三角形（面）の情報（頂点インデックス、面の中心、面法線）を生成する例です。
-  // ジオメトリがインデックス付きの場合と、インデックスが存在しない場合の両方に対応しています。
-  private getFacesFromBufferGeometry(geometry: THREE.BufferGeometry) :THREE.Mesh[] 
-  {
-   
-    // 必要な属性を取得
-    const positionAttribute = geometry.attributes.position;
-    const positions = (positionAttribute as THREE.BufferAttribute).array;
-    const faces = [];
-  
-    if (geometry.index) {
-      // インデックス付きの場合
-      const indices = geometry.index.array;
-      for (let i = 0; i < indices.length; i += 3) {
-        const a = indices[i];
-        const b = indices[i + 1];
-        const c = indices[i + 2];
-        faces.push(this.getFace(positions, a, b, c));
-      }
-    } else {
-      // インデックスなしの場合は、position 属性の順番で3頂点ずつが1面となる
-      const vertexCount = positionAttribute.count;
-      for (let i = 0; i < vertexCount; i += 3) {
-        const a = i;
-        const b = i + 1;
-        const c = i + 2;
-        faces.push(this.getFace(positions, a, b, c));
-      }
-    }
-  
-    return faces;
-  }
-  
-  private getFace(positions: ArrayLike<number>, a: number, b: number, c: number) : THREE.Mesh
-  {
-    // MeshBasicMaterial を利用して半透明のマテリアルを作成
-    const faceMaterial = new THREE.MeshBasicMaterial({
-      color: 0x00ff00,
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: 0.5
-    });
-
-    // 各頂点の座標を取得
-    const vA = new THREE.Vector3(
-      positions[a * 3],
-      positions[a * 3 + 1],
-      positions[a * 3 + 2]
-    );
-    const vB = new THREE.Vector3(
-      positions[b * 3],
-      positions[b * 3 + 1],
-      positions[b * 3 + 2]
-    );
-    const vC = new THREE.Vector3(
-      positions[c * 3],
-      positions[c * 3 + 1],
-      positions[c * 3 + 2]
-    );
-    const vertices = new Float32Array([
-      vA.x, vA.y, vA.z,
-      vB.x, vB.y, vB.z,
-      vC.x, vC.y, vC.z
-    ]);
-    const faceGeometry = new THREE.BufferGeometry();
-    faceGeometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
-    faceGeometry.computeVertexNormals();
-    faceGeometry.setIndex([a, b, c]);
-    const mesh: any = new THREE.Mesh(faceGeometry, faceMaterial);
-
-    const center = new THREE.Vector3()
-      .addVectors(vA, vB)
-      .add(vC)
-      .divideScalar(3);
-
-    const cb = new THREE.Vector3().subVectors(vC, vB);
-    const ab = new THREE.Vector3().subVectors(vA, vB);
-    const normal = new THREE.Vector3().crossVectors(cb, ab).normalize();
-
-    (mesh as any).center = center;
-    (mesh as any).normal = normal;
-    (mesh as any).secter = null;
-
-    return mesh;
-  }
- 
   ////////////////////////////////////////////////////////////////////
   // konva.js の図形を作成
   createShape() {
+    this.konva.addShape();
   }
 
 
