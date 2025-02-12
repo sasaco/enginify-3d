@@ -22,18 +22,90 @@ export class ItemViewPortService {
   // ViewPort に表示するアイテムを作成
   private setinViewPort(ViewPortPlane: THREE.Mesh<THREE.BufferGeometry, THREE.Material | THREE.Material[]>) {
 
-    const lineSegmentsList: THREE.LineSegments[] = [];
-    // 赤い線用のマテリアル
-    const lineMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
+
     // 投影対象となる現在シーンに登録されているオブジェクト
     let objList = this.scene.get();
-    // ワールド空間での Plane の法線を取得（通常、PlaneGeometry は XY 平面や XZ 平面に配置されているので注意）
-    const planeNormal = ViewPortPlane.getWorldDirection(new THREE.Vector3());
-
     // 例外処理（ViewPortに反映しないものはスキップ）
     objList = objList.filter(obj => obj.type == 'Mesh');
     objList = objList.filter(obj => obj.name !== 'view port');
+    // ワールド空間での Plane の法線を取得（通常、PlaneGeometry は XY 平面や XZ 平面に配置されているので注意）
+    const planeNormal = ViewPortPlane.getWorldDirection(new THREE.Vector3());
 
+    // 大まかにMashと衝突するか判定
+    const enableMesh: THREE.Mesh[] = [];
+    for (const obj of objList) {
+      if(this.isEdgeVisible((obj as any).center, planeNormal, obj, objList)){
+        enableMesh.push(obj as THREE.Mesh);
+      }
+    }
+    if(enableMesh.length == 0){
+      return;
+    }
+    
+    // シルエットエッジを描画するメッシュのリスト
+    const meshList = [];
+    for (const obj of enableMesh) {
+      // まず、ジオメトリから面情報（頂点インデックスや法線）を取得
+      const geometry: any = obj.geometry;
+      for(const face of this.getFacesFromBufferGeometry(geometry)){
+        meshList.push(face);
+      }
+    }
+
+    // 面の中心が隠れているか判定
+    const enableFaces = [];
+    for(const face of meshList){
+      if(this.isEdgeVisible((face as any).center, planeNormal, face, meshList)){
+        if((face as any).secter === face){
+          enableFaces.push(face);
+        }
+      }
+    }
+    if(enableFaces.length == 0){
+      return;
+    }
+
+    // エッジとそれに接する面の組を保持するマップ
+    const edgeFaceMap = new Map();
+    // 各面について辺を登録する（辺のキーは「小さい方の頂点インデックス_大きい方の頂点インデックス」とする）
+    enableFaces.forEach(face => {
+      if (!face.geometry.index) return;
+      const indices = face.geometry.index.array;
+      for (let i = 0; i < 3; i++) {
+        const i1 = indices[i];
+        const i2 = indices[(i + 1) % 3];
+        const key = i1 < i2 ? `${i1}_${i2}` : `${i2}_${i1}`;
+        if (!edgeFaceMap.has(key)) {
+          edgeFaceMap.set(key, []);
+        }
+        edgeFaceMap.get(key).push(face);
+      }
+    }); 
+    
+    // シルエットエッジのリスト
+    const silhouetteEdges: any[] = [];
+    // 各エッジについて、隣接する面のうち一方だけがビューポートに向いているかをチェック
+    edgeFaceMap.forEach((adjacentFaces, edgeKey) => {
+      if (adjacentFaces.length !== 2) {
+        // 例えばメッシュの境界エッジの場合は、片側だけの場合もあります
+        silhouetteEdges.push(edgeKey);
+      } else {
+        const face1 = adjacentFaces[0];
+        const face2 = adjacentFaces[1];
+        // 各面の法線と plane の法線との内積を計算
+        const dot1 = face1.normal.dot(planeNormal);
+        const dot2 = face2.normal.dot(planeNormal);
+        // 片方のみ正面（＝内積が正）であればシルエットエッジ
+        if ((dot1 > 0 && dot2 <= 0) || (dot1 <= 0 && dot2 > 0)) {
+          silhouetteEdges.push(edgeKey);
+        }
+      }
+    });
+
+    // 赤い線用
+    const lineSegmentsList: THREE.LineSegments[] = [];
+    const lineMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
+    /*
     for (const obj of objList) {
 
       // まず、ジオメトリから面情報（頂点インデックスや法線）を取得
@@ -141,6 +213,7 @@ export class ItemViewPortService {
       lineSegmentsList.push(lineSegments);
       
     }
+    */
     // シーンに追加
     for(const lineSegments of lineSegmentsList){
       this.scene.add(lineSegments);
@@ -152,8 +225,8 @@ export class ItemViewPortService {
     midpoint: THREE.Vector3, 
     planeNormal: THREE.Vector3, 
     face: any, 
-    objList: THREE.Object3D<THREE.Event>[],
-    tolerance = 0.001) {
+    objList: THREE.Object3D<THREE.Event>[]): boolean
+  {
 
 
     // 中点からplateに投影する位置へ向かう方向を求める
@@ -168,7 +241,7 @@ export class ItemViewPortService {
       face.secter = null;
       return true;
     }
-    
+
     // 交差したオブジェクトのうち、自分自身以外の面と交差しているものがあれば隠れていると判定
     if(intersects.length > 1) {
       return false;
@@ -185,17 +258,9 @@ export class ItemViewPortService {
 
   // BufferGeometry から index と position 属性を用いて、各三角形（面）の情報（頂点インデックス、面の中心、面法線）を生成する例です。
   // ジオメトリがインデックス付きの場合と、インデックスが存在しない場合の両方に対応しています。
-  private getFacesFromBufferGeometry(geometry: THREE.BufferGeometry)
-    : { a: number; b: number; c: number; mesh: THREE.Mesh; center: THREE.Vector3; normal: THREE.Vector3; secter: THREE.Mesh | null;  }[] 
+  private getFacesFromBufferGeometry(geometry: THREE.BufferGeometry) :THREE.Mesh[] 
   {
-    // MeshBasicMaterial を利用して半透明のマテリアルを作成
-    const faceMaterial = new THREE.MeshBasicMaterial({
-      color: 0x00ff00,
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: 0.5
-    });
-  
+   
     // 必要な属性を取得
     const positionAttribute = geometry.attributes.position;
     const positions = (positionAttribute as THREE.BufferAttribute).array;
@@ -224,8 +289,7 @@ export class ItemViewPortService {
     return faces;
   }
   
-  private getFace(positions: ArrayLike<number>, a: number, b: number, c: number)
-    : { a: number; b: number; c: number; mesh: THREE.Mesh; center: THREE.Vector3, normal: THREE.Vector3; secter: THREE.Mesh | null; }
+  private getFace(positions: ArrayLike<number>, a: number, b: number, c: number) : THREE.Mesh
   {
     // MeshBasicMaterial を利用して半透明のマテリアルを作成
     const faceMaterial = new THREE.MeshBasicMaterial({
@@ -259,7 +323,8 @@ export class ItemViewPortService {
     const faceGeometry = new THREE.BufferGeometry();
     faceGeometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
     faceGeometry.computeVertexNormals();
-    const mesh = new THREE.Mesh(faceGeometry, faceMaterial);
+    faceGeometry.setIndex([a, b, c]);
+    const mesh: any = new THREE.Mesh(faceGeometry, faceMaterial);
 
     const center = new THREE.Vector3()
       .addVectors(vA, vB)
@@ -270,9 +335,11 @@ export class ItemViewPortService {
     const ab = new THREE.Vector3().subVectors(vA, vB);
     const normal = new THREE.Vector3().crossVectors(cb, ab).normalize();
 
-    const secter = null;
+    (mesh as any).center = center;
+    (mesh as any).normal = normal;
+    (mesh as any).secter = null;
 
-    return { a, b, c, mesh, center, normal, secter};
+    return mesh;
   }
  
   ////////////////////////////////////////////////////////////////////
