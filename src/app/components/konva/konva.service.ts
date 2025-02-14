@@ -6,15 +6,22 @@ import { Shape } from 'konva/lib/Shape';
   providedIn: 'root'
 })
 export class KonvaService {
+  public stage!: Konva.Stage; // 初期化は`konva.component.ts`で行う
+  private layer: any = {};
 
-  public layer!: Konva.Layer;
+  // レイヤの作成
+  public addLayer(uuid: string): void {
+    const config: Konva.LayerConfig = {
 
-  constructor() {
-    this.layer = new Konva.Layer();
-   }
+    };
+    const layer = new Konva.Layer();
+    this.layer[uuid]= layer;
+    this.stage.add(layer);
+  }
 
-  public addShape(): void {
-    // 四角形の作成
+  // 任意形状の作成
+  public addShape(layer_uuid: string, paths: any[]): void {
+
     const path = new Konva.Path({
       fill: 'blue',
       draggable: true,
@@ -26,9 +33,8 @@ export class KonvaService {
     this.setDrag(path);
 
     // 図形をレイヤーに追加
-    this.layer.add(path);
-
-
+    const layer = this.layer[layer_uuid];
+    layer.add(path);
   }
 
   private setDrag(shape: Shape): void {

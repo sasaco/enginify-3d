@@ -15,16 +15,16 @@ export class ItemViewPortService {
 
   public createItem() {
     // three.js のメッシュを作成
-    var plane = this.createMesh();
+    const plane = this.createMesh();
     // ViewPort に表示するアイテムを作成
-    this.setinViewPort(plane);
+    const paths: any[] = this.setinViewPort(plane);
     // konva.js の図形を作成
-    this.createShape();
+    this.createShape(paths);
   }
 
   ////////////////////////////////////////////////////////////////////
   // ViewPort に表示するアイテムを作成
-  private setinViewPort(plane: THREE.Mesh<THREE.BufferGeometry, THREE.Material | THREE.Material[]>) {
+  private setinViewPort(plane: THREE.Mesh<THREE.BufferGeometry, THREE.Material | THREE.Material[]>): any[] {
 
     // 投影対象となる現在シーンに登録されているオブジェクト
     let objList = this.scene.get();
@@ -32,23 +32,38 @@ export class ItemViewPortService {
     objList = objList.filter(obj => obj.type == 'Mesh');
     objList = objList.filter(obj => obj.name !== 'view port');
     // ワールド空間での Plane の法線を取得（通常、PlaneGeometry は XY 平面や XZ 平面に配置されているので注意）
-    const normal = plane.getWorldDirection(new THREE.Vector3());
     const position = plane.getWorldPosition(new THREE.Vector3());
+    const normal = plane.getWorldDirection(new THREE.Vector3());
+    // --- 投影面内の座標系を構築 ---
+    // 基準として (0,1,0) を使い、これと法線の外積で平面内のX軸を求める
+    let xAxis = new THREE.Vector3(0, 1, 0).cross(normal);
+    if (xAxis.lengthSq() === 0) {
+      // (0,1,0) と normal が平行の場合、代わりに (1,0,0) を利用
+      xAxis = new THREE.Vector3(1, 0, 0).cross(normal);
+    }
+    xAxis.normalize();
+    // Y軸は、法線とX軸との外積で求め、右手系となるようにする
+    const yAxis = new THREE.Vector3().crossVectors(normal, xAxis).normalize();
+
+    const result = [];
 
     for (const obj of objList) {
       const mesh = obj as THREE.Mesh;
       const triangles = this.getVisibleTriangles(mesh, position);
       const polygons = this.mergeTrianglesToPolygons(triangles, 0.98);
 
-      const paths: THREE.Vector2[][] = [];
+      const paths = [];
       for (const polygon3D of polygons) {
-        const polygon2D = this.sortPointsByAngle(
-          this.projectPolygon(polygon3D, normal)); 
+        const points = polygon3D.vertices.map(P => this.projectPoint(P, normal, xAxis, yAxis));
+        const polygon2D = this.sortPointsByAngle(points);
         paths.push(polygon2D);
       }
-      console.log(paths);
+      result.push({
+        paths
+      });
     }
-    
+
+    return result;
   }
 
   // 1. 三角形のグループ化（法線がほぼ同じもの同士をまとめる）
@@ -225,42 +240,26 @@ export class ItemViewPortService {
    * ポリゴンを構成する3頂点を、指定された投影面の法線に基づく平面のX,Y座標に変換する
    * （※投影面は原点を通ると仮定）
    * @param polygon 頂点a,b,cを持つポリゴン（polygon.normal は使用しません）
-   * @param projectionNormal 投影面の法線ベクトル（例: { x: 0.6548614604158615, y: 0, z: -0.7557489448633091 }）
+   * @param planeNormal 投影面の法線ベクトル（例: { x: 0.6548614604158615, y: 0, z: -0.7557489448633091 }）
+   * @param xAxis 投影面内のX軸ベクトル
+   * @param yAxis 投影面内のY軸ベクトル
    * @returns 投影面におけるX,Y座標に変換された頂点
+   * --- 各頂点の投影処理 ---
+   * 各頂点 P を、投影面上に直交投影する：
+   *   P_proj = P - (P・planeNormal) * planeNormal
+   * その後、投影面内での座標は、
+   *   X = P_proj ・ xAxis,  Y = P_proj ・ yAxis
    */
-  private projectPolygon(
-    polygon: { normal: THREE.Vector3;  vertices: THREE.Vector3[]; },
-    projectionNormal: THREE.Vector3
-    ): THREE.Vector2[] 
-  {
-    // 投影面の法線（指定値）を正規化
-    const planeNormal = projectionNormal.clone().normalize();
-
-    // --- 投影面内の座標系を構築 ---
-    // 基準として (1, 0, 0) を使い、これと法線の外積で平面内のX軸を求める
-    let xAxis = new THREE.Vector3(1, 0, 0).cross(planeNormal);
-    // 万が一 (1,0,0) が法線と平行の場合は、(0,1,0) を利用
-    if (xAxis.lengthSq() === 0) {
-      xAxis = new THREE.Vector3(0, 1, 0).cross(planeNormal);
-    }
-    xAxis.normalize();
-
-    // Y軸は、法線とX軸との外積で求め、右手系となるようにする
-    const yAxis = new THREE.Vector3().crossVectors(planeNormal, xAxis).normalize();
-
-    // --- 各頂点の投影処理 ---
-    // 各頂点 P を、投影面上に直交投影する：
-    //   P_proj = P - (P・planeNormal) * planeNormal
-    // その後、投影面内での座標は、
-    //   X = P_proj ・ xAxis,  Y = P_proj ・ yAxis
-    const projectPoint = (P: THREE.Vector3): THREE.Vector2 => {
-      const distance = P.dot(planeNormal);
-      const projected = P.clone().sub(planeNormal.clone().multiplyScalar(distance));
-      return new THREE.Vector2(projected.dot(xAxis), projected.dot(yAxis));
-    };
-    
-    return polygon.vertices.map(projectPoint);
-  }
+  private projectPoint(
+    P: THREE.Vector3,
+    planeNormal: THREE.Vector3,
+    xAxis: THREE.Vector3,
+    yAxis: THREE.Vector3
+  ): THREE.Vector2 {
+    const distance = P.dot(planeNormal);
+    const projected = P.clone().sub(planeNormal.clone().multiplyScalar(distance));
+    return new THREE.Vector2(projected.dot(xAxis), projected.dot(yAxis));
+  };
 
   /**
    * 重心からの偏角で点群をソートして、一筆書き可能な外周順（閉じた多角形）に並び替えます。
@@ -379,8 +378,8 @@ export class ItemViewPortService {
 
   ////////////////////////////////////////////////////////////////////
   // konva.js の図形を作成
-  createShape() {
-    this.konva.addShape();
+  createShape(paths: any[]) {
+    this.konva.addShape(paths);
   }
 
 

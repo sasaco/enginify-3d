@@ -11,25 +11,21 @@ import { KonvaService } from './konva.service';
 export class KonvaComponent implements AfterViewInit, OnDestroy {
   @ViewChild('konvaContainer', { static: false }) containerRef: ElementRef | undefined;
 
-  private stage!: Konva.Stage;
-
   constructor( private konva: KonvaService ) { }
 
   ngAfterViewInit(): void {
     if(!this.containerRef) return;
     const container = this.containerRef.nativeElement;
 
-    this.stage = new Konva.Stage({
+    this.konva.stage = new Konva.Stage({
       container: container,
       width: container.offsetWidth,
       height: container.offsetHeight,
     });
-
-    this.stage.add(this.konva.layer);
   }
 
   ngOnDestroy(): void {
-    this.stage.destroy();
+    this.konva.stage.destroy();
   }
 
   
@@ -39,8 +35,8 @@ export class KonvaComponent implements AfterViewInit, OnDestroy {
     if(!this.containerRef) return;
 
     const container = this.containerRef.nativeElement;
-    this.stage.width(container.offsetWidth);
-    this.stage.height(container.offsetHeight);
-    this.stage.draw();
+    this.konva.stage.width(container.offsetWidth);
+    this.konva.stage.height(container.offsetHeight);
+    this.konva.stage.draw();
   }
 }
