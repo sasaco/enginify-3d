@@ -11,10 +11,23 @@ export class KonvaService {
 
   // レイヤの作成
   public addLayer(uuid: string): void {
-    const config: Konva.LayerConfig = {
 
-    };
-    const layer = new Konva.Layer();
+    const layer = new Konva.Layer({
+      name: uuid,             // レイヤーの名前
+      opacity: 0.8,           // 透過度（0〜1）
+      visible: true,          // 表示/非表示の設定
+      clearBeforeDraw: true,  // 描画前に自動的にレイヤーをクリアするかどうか
+      hitGraphEnabled: true,  // ヒットグラフ（クリック判定用の領域）の有効/無効
+      x: 50, // レイヤーの配置位置（ステージ上でのオフセット）
+      y: 50,
+      clip: {
+        x: 0,
+        y: 0,
+        width: 300,
+        height: 300
+      }
+    });
+
     this.layer[uuid]= layer;
     this.stage.add(layer);
   }
@@ -33,6 +46,9 @@ export class KonvaService {
     this.setDrag(path);
 
     // 図形をレイヤーに追加
+    if(!(layer_uuid in this.layer)) {
+      this.addLayer(layer_uuid);
+    }
     const layer = this.layer[layer_uuid];
     layer.add(path);
   }

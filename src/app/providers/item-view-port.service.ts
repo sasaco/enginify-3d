@@ -19,12 +19,12 @@ export class ItemViewPortService {
     // ViewPort に表示するアイテムを作成
     const paths: any[] = this.setinViewPort(plane);
     // konva.js の図形を作成
-    this.createShape(paths);
+    this.createShape(plane, paths);
   }
 
   ////////////////////////////////////////////////////////////////////
   // ViewPort に表示するアイテムを作成
-  private setinViewPort(plane: THREE.Mesh<THREE.BufferGeometry, THREE.Material | THREE.Material[]>): any[] {
+  private setinViewPort(plane: THREE.Mesh): any[] {
 
     // 投影対象となる現在シーンに登録されているオブジェクト
     let objList = this.scene.get();
@@ -378,8 +378,8 @@ export class ItemViewPortService {
 
   ////////////////////////////////////////////////////////////////////
   // konva.js の図形を作成
-  createShape(paths: any[]) {
-    this.konva.addShape(paths);
+  createShape(plane: THREE.Mesh, paths: any[]) {
+    this.konva.addShape(plane.uuid, paths);
   }
 
 
