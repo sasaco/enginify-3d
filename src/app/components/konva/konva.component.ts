@@ -1,42 +1,41 @@
 import { AfterViewInit, Component, ElementRef, HostListener, OnDestroy, ViewChild } from '@angular/core';
 import Konva from 'konva';
 import { KonvaService } from './konva.service';
+import * as ReactDOM from "react-dom/client";
+import * as React from "react";
+import { App, store } from "./polotno/editor";
+import { MobxAngularModule } from 'mobx-angular';
 
 @Component({
   selector: 'app-konva',
   standalone: true,
-  imports: [],
+  imports: [MobxAngularModule],
   templateUrl: './konva.component.html'
 })
-export class KonvaComponent implements AfterViewInit, OnDestroy {
-  @ViewChild('konvaContainer', { static: false }) containerRef: ElementRef | undefined;
+export class KonvaComponent {
+  title = "polotno-js";
+  root: ReactDOM.Root | undefined;
+  store = store;
+  ngOnInit(): void {}
 
-  constructor( private konva: KonvaService ) { }
-
-  ngAfterViewInit(): void {
-    if(!this.containerRef) return;
-    const container = this.containerRef.nativeElement;
-
-    this.konva.stage = new Konva.Stage({
-      container: container,
-      width: container.offsetWidth,
-      height: container.offsetHeight,
-    });
+  public ngOnChanges() {
+    this.renderComponent();
   }
 
-  ngOnDestroy(): void {
-    this.konva.stage.destroy();
+  public ngAfterViewInit() {
+    this.root = ReactDOM.createRoot(document.getElementById("editor")!);
+    this.renderComponent();
   }
 
-  
-  // ウインドウがリサイズした時のイベント処理
-  @HostListener("window:resize", ["$event"])
-  onWindowResize = () => {
-    if(!this.containerRef) return;
+  private renderComponent() {
+    if (this.root) {
+      this.root.render(React.createElement(App));
+    }
+  }
 
-    const container = this.containerRef.nativeElement;
-    this.konva.stage.width(container.offsetWidth);
-    this.konva.stage.height(container.offsetHeight);
-    this.konva.stage.draw();
+  public ngOnDestroy() {
+    if (this.root) {
+      this.root.unmount();
+    }
   }
 }

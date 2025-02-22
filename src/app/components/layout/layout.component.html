@@ -4,10 +4,10 @@
 
   <input id="default-range" type="range" value="{{data.range}}" (input)="changeRange($event)" 
     min="0" max="100" step="1"
-    class="z-10 h-2 bg-white rounded-lg appearance-none cursor-pointer dark:bg-blue-100
+    class="z-30 h-2 bg-white rounded-lg appearance-none cursor-pointer dark:bg-blue-100
     absolute top-12 right-4 p-2">
     
-  <div #three id="three"  class="absolute shadow-xl">
+  <div #three id="three"  class="z-20 absolute shadow-xl">
     <app-three></app-three>
   </div>
 
