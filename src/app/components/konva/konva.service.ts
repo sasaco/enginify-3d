@@ -1,24 +1,97 @@
 import { Injectable } from '@angular/core';
 import Konva from 'konva';
 import { Shape } from 'konva/lib/Shape';
+import { Page } from './page.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class KonvaService {
-  public stage!: Konva.Stage; // 初期化は`konva.component.ts`で行う
-  private layer: any = {};
+  public currentStage: Konva.Stage | null = null;
+
+  private layer: { [key: string]: Konva.Layer } = {};
+  private transformer: Konva.Transformer;
+
+  constructor() {
+    this.transformer = new Konva.Transformer({
+      rotateEnabled: true,
+      enabledAnchors: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
+      borderStroke: '#666',
+      borderStrokeWidth: 1,
+      padding: 5
+    });
+  }
+  
+  public addPage(uuid: string): void {
+    const layer = new Konva.Layer({
+      name: uuid,
+      opacity: 0.8,
+      visible: true,
+      clearBeforeDraw: true,
+      hitGraphEnabled: true,
+      x: 50,
+      y: 50
+    });
+    
+    const stage = new Konva.Stage({
+      container: uuid,
+
+    });
+    const page = new Page(uuid, layer);
+    this.pages.push(page);
+    this.stage.add(layer);
+    layer.add(this.transformer);
+    
+    if (!this.currentPage) {
+      this.switchToPage(page.id);
+    }
+  }
+
+  public removePage(pageId: string): void {
+    if (this.pages.length <= 1) return; // Don't remove last page
+    
+    const pageIndex = this.pages.findIndex(p => p.id === pageId);
+    if (pageIndex === -1) return;
+    
+    const page = this.pages[pageIndex];
+    page.layer.destroy();
+    this.pages.splice(pageIndex, 1);
+    
+    if (this.currentPage?.id === pageId) {
+      this.switchToPage(this.pages[0]?.id);
+    }
+  }
+
+  public switchToPage(pageId: string): void {
+    const page = this.pages.find(p => p.id === pageId);
+    if (!page) return;
+    
+    this.pages.forEach(p => {
+      p.layer.visible(p.id === pageId);
+      p.isVisible = p.id === pageId;
+    });
+    this.currentPage = page;
+    page.layer.batchDraw();
+  }
+
+  public getCurrentPage(): Page | null {
+    return this.currentPage;
+  }
+
+  public getPages(): Page[] {
+    return this.pages;
+  }
+
 
   // レイヤの作成
   public addLayer(uuid: string): void {
-
     const layer = new Konva.Layer({
-      name: uuid,             // レイヤーの名前
-      opacity: 0.8,           // 透過度（0〜1）
-      visible: true,          // 表示/非表示の設定
-      clearBeforeDraw: true,  // 描画前に自動的にレイヤーをクリアするかどうか
-      hitGraphEnabled: true,  // ヒットグラフ（クリック判定用の領域）の有効/無効
-      x: 50, // レイヤーの配置位置（ステージ上でのオフセット）
+      name: uuid,
+      opacity: 0.8,
+      visible: true,
+      clearBeforeDraw: true,
+      hitGraphEnabled: true,
+      x: 50,
       y: 50,
       clip: {
         x: 0,
@@ -28,12 +101,17 @@ export class KonvaService {
       }
     });
 
-    this.layer[uuid]= layer;
+    this.layer[uuid] = layer;
     this.stage.add(layer);
+    layer.add(this.transformer);
+    layer.batchDraw();
   }
 
   // 任意形状の作成
   public addShape(layer_uuid: string, paths: any[]): void {
+    if (!(layer_uuid in this.layer)) {
+      this.addLayer(layer_uuid);
+    }
 
     const path = new Konva.Path({
       fill: 'blue',
@@ -45,42 +123,54 @@ export class KonvaService {
 
     this.setDrag(path);
 
-    // 図形をレイヤーに追加
-    if(!(layer_uuid in this.layer)) {
-      this.addLayer(layer_uuid);
-    }
     const layer = this.layer[layer_uuid];
     layer.add(path);
+    layer.batchDraw();
   }
 
   private setDrag(shape: Shape): void {
-
-    // 円のクリックイベント
-    shape.on('click', () => {
-      shape.fill('green');
-      this.layer.draw();
+    // Selection handling
+    shape.on('click tap', () => {
+      this.selectShape(shape);
     });
 
-    // マウスオーバーイベント
+    // Double click for color change
+    shape.on('dblclick', () => {
+      const colors = ['red', 'green', 'blue', 'yellow'];
+      const currentColor = shape.fill();
+      const currentColorStr = typeof currentColor === 'string' ? currentColor : colors[0];
+      const nextColor = colors[(colors.indexOf(currentColorStr) + 1) % colors.length];
+      shape.fill(nextColor);
+      shape.getLayer()?.batchDraw();
+    });
+
+    // Mouse interactions
     shape.on('mouseover', () => {
       document.body.style.cursor = 'pointer';
       shape.opacity(0.5);
-      this.layer.draw();
+      shape.getLayer()?.batchDraw();
     });
 
-    // マウスアウトイベント
     shape.on('mouseout', () => {
       document.body.style.cursor = 'default';
       shape.opacity(1);
-      this.layer.draw();
+      shape.getLayer()?.batchDraw();
     });
 
-    // ドラッグ終了イベント
+    // Drag events
+    shape.on('dragstart', () => {
+      shape.moveToTop();
+      this.transformer.moveToTop();
+    });
+
+    shape.on('dragmove', () => {
+      this.transformer.getLayer()?.batchDraw();
+    });
+
     shape.on('dragend', () => {
-      console.log(`Circle dragged to x: ${shape.x()}, y: ${shape.y()}`);
+      console.log(`Shape dragged to x: ${shape.x()}, y: ${shape.y()}`);
     });
   }
-
 
   public addCircle(): void {
     // 円の作成
@@ -94,14 +184,22 @@ export class KonvaService {
 
     this.setDrag(circle);
 
-    // 図形をレイヤーに追加
-    this.layer.add(circle);
+    // Add shape to the first layer
+    const layers = Object.values(this.layer);
+    if (layers.length > 0) {
+      const firstLayer = layers[0];
+      firstLayer.add(circle);
+      firstLayer.batchDraw();
+    } else {
+      // Create default layer if none exists
+      this.addLayer('default');
+      this.layer['default'].add(circle);
+      this.layer['default'].batchDraw();
+    }
 
   }
 
   public addRectangle(): void {
-
-    // 四角形の作成
     const rectangle = new Konva.Rect({
       x: 200,
       y: 200,
@@ -111,13 +209,33 @@ export class KonvaService {
       draggable: true,
     });
 
-    // 四角形のクリックイベント
-    rectangle.on('click', () => {
-      rectangle.fill('yellow');
-      this.layer.draw();
-    });
+    this.setDrag(rectangle);
+    
+    // Add shape to the first layer
+    const layers = Object.values(this.layer);
+    if (layers.length > 0) {
+      const firstLayer = layers[0];
+      firstLayer.add(rectangle);
+      firstLayer.batchDraw();
+    } else {
+      // Create default layer if none exists
+      this.addLayer('default');
+      this.layer['default'].add(rectangle);
+      this.layer['default'].batchDraw();
+    }
+  }
 
-    // 図形をレイヤーに追加
-    this.layer.add(rectangle);
+  public selectShape(shape: Konva.Shape): void {
+    this.transformer.nodes([shape]);
+    const layer = shape.getLayer();
+    if (layer && !layer.find('.transformer').length) {
+      layer.add(this.transformer);
+      layer.batchDraw();
+    }
+  }
+
+  public clearSelection(): void {
+    this.transformer.nodes([]);
+    this.transformer.getLayer()?.batchDraw();
   }
 }

@@ -379,6 +379,7 @@ export class ItemViewPortService {
   ////////////////////////////////////////////////////////////////////
   // konva.js の図形を作成
   createShape(plane: THREE.Mesh, paths: any[]) {
+    this.konva.addPage(plane.uuid);
     this.konva.addShape(plane.uuid, paths);
   }
 
