@@ -382,11 +382,17 @@ export class ItemViewPortService {
   // konva.js の図形を作成
   createShape(plane: THREE.Mesh, paths: any[]) {
     const uuid: string = plane.uuid;
-    const w: number = plane.width;
-    const h: number = plane.height;
+    
+    // PlaneGeometryからパラメータを取得
+    // ジオメトリがPlaneGeometryの場合、parametersから幅と高さを取得
+    if (plane.geometry instanceof THREE.PlaneGeometry) {
+      const geometry = plane.geometry as THREE.PlaneGeometry;
+      const w = geometry.parameters.width;
+      const h = geometry.parameters.height;
+      this.layer.addPage(uuid, w, h);
+      this.shape.addShape(uuid, paths);
+    }
 
-    this.layer.addPage(uuid, w, h);
-    this.shape.addShape(uuid, paths);
   }
 
 
