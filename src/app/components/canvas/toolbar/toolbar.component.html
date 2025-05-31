@@ -1,0 +1,61 @@
+<div class="toolbar-container">
+  <div class="toolbar">
+    <!-- 選択ツール -->
+    <button class="tool-button" [class.active]="selectedTool === ToolType.SELECT" (click)="selectTool(ToolType.SELECT)">
+      <i class="material-icons">near_me</i>
+      <span class="tooltip">選択</span>
+    </button>
+    
+    <!-- パンツール -->
+    <button class="tool-button" [class.active]="selectedTool === ToolType.PAN" (click)="selectTool(ToolType.PAN)">
+      <i class="material-icons">pan_tool</i>
+      <span class="tooltip">パン</span>
+    </button>
+    
+    <!-- 付箋ツール -->
+    <button class="tool-button" [class.active]="selectedTool === ToolType.STICKY_NOTE" (click)="selectTool(ToolType.STICKY_NOTE)">
+      <i class="material-icons">note</i>
+      <span class="tooltip">付箋</span>
+    </button>
+    
+    <!-- 図形ツール -->
+    <button class="tool-button" [class.active]="selectedTool === ToolType.SHAPE" (click)="selectTool(ToolType.SHAPE)">
+      <i class="material-icons">category</i>
+      <span class="tooltip">図形</span>
+    </button>
+    
+    <!-- 図形サブメニュー -->
+    <div class="submenu" *ngIf="showShapeSubmenu">
+      <button class="submenu-button" [class.active]="selectedShapeType === 'rectangle'" (click)="selectShapeType('rectangle')">
+        <div class="shape-preview rectangle"></div>
+        <span>長方形</span>
+      </button>
+      <button class="submenu-button" [class.active]="selectedShapeType === 'circle'" (click)="selectShapeType('circle')">
+        <div class="shape-preview circle"></div>
+        <span>円</span>
+      </button>
+      <button class="submenu-button" [class.active]="selectedShapeType === 'triangle'" (click)="selectShapeType('triangle')">
+        <div class="shape-preview triangle"></div>
+        <span>三角形</span>
+      </button>
+    </div>
+    
+    <!-- テキストツール -->
+    <button class="tool-button" [class.active]="selectedTool === ToolType.TEXT" (click)="selectTool(ToolType.TEXT)">
+      <i class="material-icons">text_fields</i>
+      <span class="tooltip">テキスト</span>
+    </button>
+    
+    <!-- コネクタツール -->
+    <button class="tool-button" [class.active]="selectedTool === ToolType.CONNECTOR" (click)="selectTool(ToolType.CONNECTOR)">
+      <i class="material-icons">timeline</i>
+      <span class="tooltip">コネクタ</span>
+    </button>
+    
+    <!-- 画像ツール -->
+    <button class="tool-button" [class.active]="selectedTool === ToolType.IMAGE" (click)="selectTool(ToolType.IMAGE)">
+      <i class="material-icons">image</i>
+      <span class="tooltip">画像</span>
+    </button>
+  </div>
+</div> 

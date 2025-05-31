@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import Konva from 'konva';
 import { KonvaStageService } from './konva.stage.service';
 import { Layer } from 'konva/lib/Layer';
+import interact from 'interactjs';
 
 @Injectable({
   providedIn: 'root'
@@ -10,17 +11,7 @@ export class KonvaLayerService {
 
   private pages: { [key: string]: Konva.Layer } = {};
 
-  // ビューポートの移動を制御する
-  private transformer: Konva.Transformer;
-
   constructor(private konva: KonvaStageService) {
-    this.transformer = new Konva.Transformer({
-      rotateEnabled: true,
-      enabledAnchors: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
-      borderStroke: '#666',
-      borderStrokeWidth: 1,
-      padding: 5
-    });
    }
 
   // Initialize Konva stage with fixed dimensions
@@ -29,25 +20,67 @@ export class KonvaLayerService {
 
     const layer = new Konva.Layer({
       name: uuid,
-      opacity: 0.8,
       visible: true,
       clearBeforeDraw: true,
-      hitGraphEnabled: true,
-      x: 0,
-      y: 0,
-      clip: {
+      crip:{
         x: 0,
         y: 0,
         width: width,
         height: height
       }
     });
-    layer.add(this.transformer);
-    layer.batchDraw();
-    this.pages[uuid] = layer;
-
     this.konva.stage.add(layer);
 
+    // レイヤーに矩形を追加
+    const rect = new Konva.Rect({
+      x: 0,
+      y: 0,
+      width: width,
+      height: height,
+      fill: 'white',
+      stroke: 'black',
+      strokeWidth: 1
+    });
+
+    layer.add(rect);
+
+    // レイヤーのキャンバス要素を取得
+    const canvas = layer.getCanvas()._canvas as HTMLCanvasElement;
+    if (canvas) {
+      // canvas.style.backgroundColor = '#ffffff';
+      // canvas.style.position = 'absolute';  
+      // canvas.style.width = `${width}px`;   
+      // canvas.style.height = `${height}px`; 
+      // target elements with the "draggable" class
+      // interact(canvas)
+      // .draggable({
+      //   listeners: { move: this.dragMoveListener },
+      //   inertia: true,
+      //   modifiers: [
+      //     interact.modifiers.restrictRect({
+      //       restriction: 'parent',
+      //       endOnly: true
+      //     })
+      //   ]
+      // })
+    }
+
+    layer.batchDraw();
+    this.pages[uuid] = layer;
+  }
+
+  private dragMoveListener(event: any) {
+    const target = event.target
+    // keep the dragged position in the data-x/data-y attributes
+    const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx
+    const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy
+  
+    // translate the element
+    target.style.transform = 'translate(' + x + 'px, ' + y + 'px)'
+  
+    // update the posiion attributes
+    target.setAttribute('data-x', x)
+    target.setAttribute('data-y', y)
   }
 
   public removePage(pageId: string): void {

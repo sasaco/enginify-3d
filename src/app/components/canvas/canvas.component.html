@@ -1,0 +1,14 @@
+<div class="canvas-wrapper">
+  <!-- ツールバー -->
+  <app-canvas-toolbar></app-canvas-toolbar>
+  
+  <!-- キャンバス本体 -->
+  <div #canvasContainer class="canvas-container"
+    (wheel)="onMouseWheel($event)"
+    (mousedown)="onMouseDown($event)"
+    (mousemove)="onMouseMove($event)"
+    (mouseup)="onMouseUp()"
+    (mouseleave)="onMouseLeave()">
+    <!-- ここにKonvaステージが描画されます -->
+  </div>
+</div> 
