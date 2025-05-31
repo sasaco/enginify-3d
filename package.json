@@ -34,6 +34,7 @@
     "interactjs": "^1.10.27",
     "konva": "^9.3.18",
     "monaco-editor": "^0.52.2",
+    "opencascade.js": "^1.1.1",
     "path": "^0.12.7",
     "rxjs": "~7.5.0",
     "three": "^0.149.0",
