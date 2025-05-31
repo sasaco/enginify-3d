@@ -24,15 +24,28 @@ export class KonvaShapeService {
   // 任意形状の作成
   public addShape(layer_uuid: string, paths: any[]): void {
     const layer = this.layer.getPage(layer_uuid);
-
+    if (!layer) return;
+    
+    // より視覚的に確認しやすい図形を作成
     const path = new Konva.Path({
-      fill: 'blue',
+      fill: '#FF5733', // 明るいオレンジ色
+      stroke: 'black', // 黒い枠線
+      strokeWidth: 2,  // 枠線の太さ
       draggable: true,
+      opacity: 0.8,    // 少し透明に
     });
-    path.x(50);
-    path.y(50);
-    path.data('M 200 100 L 50 50 L 50 100 Z');
+    
+    // 中央に配置
+    path.x(200);
+    path.y(150);
+    
+    // より大きな三角形
+    path.data('M 0 0 L 100 0 L 50 100 Z');
 
+    // 図形をレイヤーに追加
+    layer.add(path);
+    layer.batchDraw();
+    
     this.setDrag(path);
   }
 

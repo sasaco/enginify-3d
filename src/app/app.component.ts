@@ -2,18 +2,19 @@ import { Component, OnInit } from '@angular/core';
 import { ElectronService } from './providers/electron.service';
 import { Title } from '@angular/platform-browser';
 import packageJson from '../../package.json';
-import { RouterModule } from '@angular/router';
+import { RouterModule, RouterOutlet } from '@angular/router';
 import { initFlowbite } from 'flowbite';
 
 import { MenuComponent } from './components/menu/menu.component';
 import { ToolbarComponent } from './components/toolbar/toolbar.component';
 import { LayoutComponent } from './components/layout/layout.component';
+import { CanvasComponent } from './components/canvas/canvas.component';
 
 @Component({
     selector: 'app-root',
     templateUrl: './app.component.html',
     standalone: true,
-    imports: [RouterModule, MenuComponent, ToolbarComponent, LayoutComponent]
+    imports: [RouterOutlet, MenuComponent, ToolbarComponent, LayoutComponent, CanvasComponent]
 })
 export class AppComponent implements OnInit  {
   public version: string;
